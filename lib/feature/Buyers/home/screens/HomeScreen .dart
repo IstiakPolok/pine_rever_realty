@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/const/app_colors.dart';
+import '../../../../core/const/app_colors.dart';
+import '../../PropertyListScreen/screens/PropertyListScreen.dart';
+import '../../PropertyDetailsScreen /screens/PropertyDetailsScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -109,7 +112,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   if (_isMlsExpanded) ...[
                     SizedBox(height: 16.h),
-                    ..._mlsProperties.map((prop) => _buildPropertyCard(prop)),
+                    ..._mlsProperties.map(
+                      (prop) => GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => PropertyDetailsScreen(),
+                            ),
+                          );
+                        },
+                        child: _buildPropertyCard(prop),
+                      ),
+                    ),
                   ],
 
                   // 5. Agent Properties List Section
@@ -126,7 +140,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   if (_isAgentExpanded) ...[
                     SizedBox(height: 16.h),
-                    ..._agentProperties.map((prop) => _buildPropertyCard(prop)),
+                    ..._agentProperties.map(
+                      (prop) => GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => PropertyDetailsScreen(),
+                            ),
+                          );
+                        },
+                        child: _buildPropertyCard(prop),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -163,10 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   'Find your dream home',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.sp,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -202,47 +224,239 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Expanded(
           child: Container(
-            height: 50.h,
+            height: 50,
             decoration: BoxDecoration(
               color: const Color(
                 0xFFFFF3E0,
               ).withOpacity(0.5), // Light orange bg
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search properties',
-                hintStyle: GoogleFonts.poppins(
-                  color: greyText.withOpacity(0.9),
-                  fontSize: 14.sp,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: greyText.withOpacity(0.9),
-                ),
+                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
         ),
-        SizedBox(width: 12.w),
+        const SizedBox(width: 12),
         Container(
-          height: 50.h,
-          width: 50.w,
+          height: 50,
+          width: 50,
           decoration: BoxDecoration(
-            border: Border.all(color: greyText.withOpacity(0.3)),
-            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
-            icon: Icon(Icons.tune, color: primaryColor),
-            onPressed: () {},
+            icon: const Icon(Icons.tune, color: primaryText),
+            onPressed: () {
+              _showFilterDialog(context); // Trigger the filter dialog
+            },
           ),
         ),
       ],
     );
   }
 
+  // --- FILTER DIALOG LOGIC ---
+
+  void _showFilterDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          insetPadding: const EdgeInsets.all(20),
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(24.0),
+            width: double.infinity,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filters',
+                        style: GoogleFonts.lora(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: primaryText,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        color: Colors.grey[600],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Price Range
+                  _buildFilterLabel('Price Range'),
+                  _buildFilterInput(hint: 'Price'),
+                  const SizedBox(height: 16),
+
+                  // Minimum Bedroom
+                  _buildFilterLabel('Minimum Bedroom'),
+                  _buildFilterDropdown(
+                    hint: 'Any',
+                    items: ['Any', '1', '2', '3', '4+'],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Location
+                  _buildFilterLabel('Location'),
+                  _buildFilterDropdown(
+                    hint: 'Your expected location',
+                    items: [
+                      'New York',
+                      'Los Angeles',
+                      'Chicago',
+                      'Springfield',
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            // Add logic to clear filters
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey[400]!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Clear All',
+                            style: TextStyle(
+                              color: primaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Get.to(() => PropertyListScreen());
+
+                            // Add logic to apply filters
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: secondaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Apply Filters',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper for the Filter Dialog Labels
+  Widget _buildFilterLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: GoogleFonts.lora(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: primaryText,
+        ),
+      ),
+    );
+  }
+
+  // Helper for Input Fields in Filter Dialog
+  Widget _buildFilterInput({required String hint}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAEAEA), // Light grey from image
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper for Dropdowns in Filter Dialog
+  Widget _buildFilterDropdown({
+    required String hint,
+    required List<String> items,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAEAEA), // Light grey from image
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          hint: Text(
+            hint,
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+          ),
+          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[500]),
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item, style: TextStyle(color: primaryText)),
+            );
+          }).toList(),
+          onChanged: (val) {},
+        ),
+      ),
+    );
+  }
+
+  // --- END FILTER DIALOG LOGIC ---
   Widget _buildHeroSection() {
     return Container(
       height: 280.h,
@@ -304,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Browse listings and connect with sellers effortlessly',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 12.sp,
                       ),
@@ -313,7 +527,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Get.to(() => PropertyListScreen());
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: secondaryColor,
                           foregroundColor: Colors.white,
@@ -324,9 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Text(
                           'Start Explore',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -426,7 +640,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Text(
                     'For Sale',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 10.sp,
                       fontWeight: FontWeight.w500,
@@ -489,7 +703,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(width: 4.w),
                     Text(
                       property['address'],
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 12.sp,
                         color: Colors.grey[600],
                       ),
@@ -519,7 +733,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       property['price'],
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: blueColor,
@@ -527,7 +741,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Text(
                       'Agent: ${property['agent']}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 12.sp,
                         color: Colors.grey[600],
                       ),
@@ -549,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(width: 4.w),
         Text(
           text,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 12.sp,
             color: Colors.grey[800],
             fontWeight: FontWeight.w500,

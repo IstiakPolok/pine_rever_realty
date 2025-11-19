@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import '../../../core/const/app_colors.dart';
+import '../../../../core/const/app_colors.dart';
 import '../../home/screens/HomeScreen .dart';
 
 // Placeholder for BottomNavbarController if not defined in your project

@@ -8,7 +8,7 @@ import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/authTextfield.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
-import '../../../bottom_nav_bar/screen/bottom_nav_bar.dart';
+import '../../../Buyers/bottom_nav_bar/screen/bottom_nav_bar.dart';
 import '../../forgetPass/screens/forgetpassScreen.dart';
 import '../../signUp/screens/signScreen.dart';
 
