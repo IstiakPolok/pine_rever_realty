@@ -51,6 +51,7 @@ class OnBoarding extends StatelessWidget {
                       // );
                       key.currentState!.reset();
                       Get.offAll(() => const roleSelect());
+                      return null;
                     },
                     height: 60.h,
                     borderRadius: 40.r,
@@ -62,6 +63,7 @@ class OnBoarding extends StatelessWidget {
                       color: Colors.white,
                       size: 24.sp,
                     ),
+                    alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -92,7 +94,6 @@ class OnBoarding extends StatelessWidget {
                         ),
                       ],
                     ),
-                    alignment: Alignment.center,
                   ),
                 ),
               ),

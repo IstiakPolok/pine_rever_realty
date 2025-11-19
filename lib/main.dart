@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'route/app_routes.dart';
@@ -10,6 +11,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   configEasyLoading();
+
+  // Lock orientation to portrait only (disable orientation changes)
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(MyApp());
 }
@@ -37,17 +41,10 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) => GetMaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Tha Bridge',
+        title: 'Pine Rever Realty',
         getPages: AppRoute.routes,
         initialRoute: AppRoute.splashScreen,
-        theme: ThemeData(
-          textTheme:
-              GoogleFonts.philosopherTextTheme(), // Apply Philosopher globally
-          // If you want to customize it further:
-          // textTheme: GoogleFonts.philosopherTextTheme(
-          //   Theme.of(context).textTheme,
-          // ),
-        ),
+        theme: ThemeData(textTheme: GoogleFonts.loraTextTheme()),
         builder: EasyLoading.init(),
       ),
     );

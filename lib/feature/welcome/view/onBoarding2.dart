@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/const/app_colors.dart';
 import '../../auth/login/screens/loginScreen.dart';
+import '../../auth/signUp/screens/signScreen.dart';
 
 class OnBoarding2 extends StatefulWidget {
   const OnBoarding2({super.key});
@@ -41,10 +42,7 @@ class _OnBoarding2State extends State<OnBoarding2> {
               const SizedBox(height: 16),
 
               // NEW: "Or" Text
-              Text(
-                'Or',
-                style: GoogleFonts.poppins(fontSize: 15, color: Colors.white),
-              ),
+              Text('Or', style: TextStyle(fontSize: 15, color: Colors.white)),
               const SizedBox(height: 16),
 
               // NEW: "Sign up" Button
@@ -55,7 +53,7 @@ class _OnBoarding2State extends State<OnBoarding2> {
                 borderColor:
                     Colors.grey[400], // Light border to make it visible
                 onPressed: () {
-                  // Handle sign up press
+                  Get.to(() => const SignUpScreen());
                 },
               ),
             ],
@@ -90,7 +88,7 @@ class _OnBoarding2State extends State<OnBoarding2> {
         ),
         child: Text(
           text,
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -115,9 +113,9 @@ class _OnBoarding2State extends State<OnBoarding2> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Log in to connect with sellers and agents',
+            'Buying a home is an exciting chapter, and I’m here to help you explore properties with confidence. Tell me a little about what you’re looking for, and we’ll take it one step at a time.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 14,
               color: Colors.white.withOpacity(0.9),
               height: 1.5,

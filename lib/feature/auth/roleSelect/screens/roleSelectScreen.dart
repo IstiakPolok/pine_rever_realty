@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 
 import '../../../welcome/view/onBoarding2.dart';
-import '../../login/screens/loginScreen.dart';
 
 class roleSelect extends StatefulWidget {
   const roleSelect({super.key});
@@ -74,7 +73,7 @@ class _roleSelectState extends State<roleSelect> {
           Text(
             'Explore properties and manage showings effortlessly',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.9),
               height: 1.5,
@@ -116,7 +115,7 @@ class _roleSelectState extends State<roleSelect> {
           Text(
             'Choose the option that best describes you',
 
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           const SizedBox(height: 32),
 
@@ -179,10 +178,7 @@ class _roleSelectState extends State<roleSelect> {
                 children: [
                   Text(
                     'Continue',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward, size: 20),
@@ -195,7 +191,7 @@ class _roleSelectState extends State<roleSelect> {
           // "Don't worry..." Footer Text
           Text(
             "Don't worry, you can switch anytime",
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
           ),
           const SizedBox(height: 30),
         ],
@@ -250,7 +246,7 @@ class _roleSelectState extends State<roleSelect> {
                 ),
                 Text(
                   label,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: isSelected
                         ? FontWeight.w600

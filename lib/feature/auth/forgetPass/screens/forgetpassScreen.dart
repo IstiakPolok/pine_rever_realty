@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/const/app_colors.dart';
-import '../../../../core/const/gradientButton.dart';
-import '../../signUp/screens/signScreen.dart';
+import '../../../../core/const/authTextfield.dart';
+import '../../../../core/const/customButton.dart';
+import '../../../../core/const/custombackbutton.dart';
 import 'otpVerificationScreen.dart';
 
 class forgetpassScreen extends StatelessWidget {
@@ -12,70 +14,95 @@ class forgetpassScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 80.0),
-              Center(
-                child: Image.asset(
-                  'assets/icons/logo.png',
-                  width: 200,
-                  height: 200,
-                ),
-              ),
-              const SizedBox(height: 50.0),
-              Icon(Icons.lock, size: 40),
-              Text(
-                "Forgot Password",
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white,
 
-              SizedBox(height: 50),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'User Email',
-                  labelStyle: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 18,
-                    color: primaryColor, // Color when inactive
-                    fontWeight: FontWeight.w600,
-                  ),
-                  // When the label floats (TextField is active/focused)
-                  floatingLabelStyle: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 18, // Larger size when active
-                    color: primaryColor, // Change to any color you like
-                    fontWeight: FontWeight.bold,
-                  ),
-                  hintText: 'Enter Your Email',
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Colors.grey, // Border color when focused
-                      width: 2.0,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/image/signInbg.png', fit: BoxFit.fill),
+          ),
+          Positioned(top: 30.h, left: 8.w, child: custombackbuttom()),
+
+          // Main content
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 20.h),
+                // "Welcome Back" Title
+                Center(
+                  child: Text(
+                    'Forgot Password',
+                    style: GoogleFonts.lora(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                      color: primaryText,
                     ),
                   ),
                 ),
-              ),
+                SizedBox(height: 12.h),
+                // Subtitle
+                Center(
+                  child: Text(
+                    'Enter your email to reset password',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.lora(
+                      fontSize: 12.sp,
+                      color: Colors.grey[600],
+                      height: 0.8,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 40.h),
 
-              const SizedBox(height: 30.0),
+                // Email Field
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildLabel('Email'),
+                ),
+                AuthTextField(hint: 'Enter your email', obscureText: false),
+                SizedBox(height: 16.h),
 
-              /// Log In Button
-              GradientButton(
-                text: 'Verify',
-                onPressed: () {
-                  Get.to(otpVerificationScreen());
-                },
-              ),
-            ],
+                // Forgot Password
+                SizedBox(height: 24.h),
+
+                // Sign In Button
+                // _buildAuthButton(
+                //   text: 'Sign in',
+                //   backgroundColor: secondaryColor,
+                //   textColor: Colors.white,
+                //   onPressed: () {
+                //     // Handle sign in logic
+                //   },
+                // ),
+                Custombutton(
+                  text: 'Send Code',
+                  onPressed: () {
+                    Get.to(const otpVerificationScreen());
+                  },
+                  color: secondaryColor,
+                ),
+
+                SizedBox(height: 100.h),
+              ],
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  // Helper for text field labels
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w500,
+        color: primaryText,
       ),
     );
   }
