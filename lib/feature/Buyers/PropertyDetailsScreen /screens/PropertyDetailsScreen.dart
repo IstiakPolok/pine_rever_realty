@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/const/app_colors.dart';
+import '../../Schedule/screens/scheduleShowingScreen.dart';
 
 class PropertyDetailsScreen extends StatefulWidget {
   const PropertyDetailsScreen({super.key});
@@ -13,8 +15,6 @@ class PropertyDetailsScreen extends StatefulWidget {
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
   // State to track which tab is selected: 0 for Overview, 1 for Feature
   int _selectedTab = 0;
-
-  static const Color greyText = Color(0xFFF5F5F5);
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +237,9 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Get.to(() => const ScheduleShowingScreen());
+                      },
                       icon: const Icon(Icons.calendar_today_outlined, size: 18),
                       label: Text(
                         'Schedule a Showing',

@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/const/app_colors.dart';
 import '../../auth/login/screens/loginScreen.dart';
 import '../../auth/signUp/screens/signScreen.dart';
+import '../../auth/signUp/screens/AgentSignUpScreen.dart';
 
 class OnBoarding2 extends StatefulWidget {
-  const OnBoarding2({super.key});
+  final String userRole;
+  const OnBoarding2({super.key, this.userRole = 'Buyer'});
 
   @override
   State<OnBoarding2> createState() => _OnBoarding2State();
@@ -36,7 +38,7 @@ class _OnBoarding2State extends State<OnBoarding2> {
                 backgroundColor: secondaryColor,
                 textColor: Colors.white,
                 onPressed: () {
-                  Get.to(() => const LoginScreen());
+                  Get.to(() => LoginScreen(userRole: widget.userRole));
                 },
               ),
               const SizedBox(height: 16),
@@ -53,7 +55,11 @@ class _OnBoarding2State extends State<OnBoarding2> {
                 borderColor:
                     Colors.grey[400], // Light border to make it visible
                 onPressed: () {
-                  Get.to(() => const SignUpScreen());
+                  if (widget.userRole == 'Agent') {
+                    Get.to(() => const AgentSignUpScreen());
+                  } else {
+                    Get.to(() => const SignUpScreen());
+                  }
                 },
               ),
             ],

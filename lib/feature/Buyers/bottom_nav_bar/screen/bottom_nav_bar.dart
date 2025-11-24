@@ -3,7 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import '../../../../core/const/app_colors.dart';
-import '../../home/screens/HomeScreen .dart';
+import '../../home/screens/HomeScreen.dart';
+import '../../setting/Profile/Screens/ProfileScreen.dart';
+import '../../SavedProperties/screens/SavedPropertiesScreen.dart';
+import '../../../chat/screen/ChatListScreen.dart';
 
 // Placeholder for BottomNavbarController if not defined in your project
 class BottomNavbarController extends GetxController {
@@ -30,15 +33,9 @@ class _BottomNavbarState extends State<BottomNavbar> {
     //   child: Text('Home Screen', style: TextStyle(fontSize: 24.sp)),
     // ),
     HomeScreen(),
-    Center(
-      child: Text('Likes Screen', style: TextStyle(fontSize: 24.sp)),
-    ),
-    Center(
-      child: Text('Search Screen', style: TextStyle(fontSize: 24.sp)),
-    ),
-    Center(
-      child: Text('Profile Screen', style: TextStyle(fontSize: 24.sp)),
-    ),
+    SavedPropertiesScreen(),
+    ChatListScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -82,8 +79,8 @@ class _BottomNavbarState extends State<BottomNavbar> {
             tabs: const [
               GButton(icon: Icons.home, text: 'Home'),
               GButton(icon: Icons.favorite_border, text: 'Likes'),
-              GButton(icon: Icons.search, text: 'Search'),
-              GButton(icon: Icons.person_outline, text: 'Profile'),
+              GButton(icon: Icons.message_outlined, text: 'Chat'),
+              GButton(icon: Icons.settings_outlined, text: 'Settings'),
             ],
             selectedIndex: controller.currentIndex.value,
             onTabChange: (index) {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 
+import '../../../Sellers/bottom_nav_bar/screen/Seller_bottom_nav_bar.dart';
 import '../../../welcome/view/onBoarding2.dart';
 
 class roleSelect extends StatefulWidget {
@@ -162,7 +163,15 @@ class _roleSelectState extends State<roleSelect> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Get.to(() => const OnBoarding2());
+                if (_selectedUserType == 'Buyer') {
+                  Get.to(() => const OnBoarding2(userRole: 'Buyer'));
+                } else if (_selectedUserType == 'Seller') {
+                  // Replace with your Seller screen
+                  Get.to(() => SellerBottomNavbar());
+                } else if (_selectedUserType == 'Agent') {
+                  // Replace with your Agent screen
+                  Get.to(() => const OnBoarding2(userRole: 'Agent'));
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: secondaryColor,

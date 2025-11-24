@@ -11,9 +11,13 @@ import '../../../../core/const/custombackbutton.dart';
 import '../../../Buyers/bottom_nav_bar/screen/bottom_nav_bar.dart';
 import '../../forgetPass/screens/forgetpassScreen.dart';
 import '../../signUp/screens/signScreen.dart';
+import '../../signUp/screens/AgentSignUpScreen.dart';
+import '../../../Agent/bottom_nav_bar/screen/Agent_bottom_nav_bar.dart';
+import '../../../Sellers/bottom_nav_bar/screen/Seller_bottom_nav_bar.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  final String userRole;
+  const LoginScreen({super.key, this.userRole = 'Buyer'});
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +110,13 @@ class LoginScreen extends StatelessWidget {
                     Custombutton(
                       text: 'Sign In',
                       onPressed: () {
-                        Get.to(() => const BottomNavbar());
+                        if (userRole == 'Agent') {
+                          Get.to(() => const AgentBottomNavbar());
+                        } else if (userRole == 'Seller') {
+                          Get.to(() => SellerBottomNavbar());
+                        } else {
+                          Get.to(() => const BottomNavbar());
+                        }
                       },
                       color: secondaryColor,
                     ),
@@ -133,7 +143,11 @@ class LoginScreen extends StatelessWidget {
                               // Add recognizer to make it tappable
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  Get.to(() => const SignUpScreen());
+                                  if (userRole == 'Agent') {
+                                    Get.to(() => const AgentSignUpScreen());
+                                  } else {
+                                    Get.to(() => const SignUpScreen());
+                                  }
                                 },
                             ),
                           ],

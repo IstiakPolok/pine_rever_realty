@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/const/app_colors.dart';
+import '../../Notification/Screens/NotificationScreen.dart';
 import '../../PropertyListScreen/screens/PropertyListScreen.dart';
 import '../../PropertyDetailsScreen /screens/PropertyDetailsScreen.dart';
 
@@ -198,7 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             IconButton(
               icon: Icon(Icons.notifications_outlined, size: 28.sp),
-              onPressed: () {},
+              onPressed: () {
+                Get.to(NotificationScreen());
+              },
               color: primaryColor,
             ),
             Positioned(
