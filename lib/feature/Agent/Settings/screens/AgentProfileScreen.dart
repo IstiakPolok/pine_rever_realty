@@ -1,0 +1,349 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:pine_rever_realty/core/const/app_colors.dart';
+import 'EditProfileScreen.dart';
+
+class AgentProfileScreen extends StatelessWidget {
+  const AgentProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Profile',
+          style: GoogleFonts.lora(
+            color: Colors.black,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Header Card
+            Container(
+              margin: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 50.r,
+                    backgroundColor: primaryColor.withOpacity(0.1),
+                    child: Icon(Icons.person, size: 60.sp, color: primaryColor),
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'Sarah Johnson',
+                    style: GoogleFonts.lora(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w600,
+                      color: primaryText,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Residential Properties',
+                    style: GoogleFonts.lora(
+                      fontSize: 14.sp,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 16.sp,
+                        color: Colors.grey[600],
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Springfield, IL',
+                        style: GoogleFonts.lora(
+                          fontSize: 13.sp,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildBadge(
+                        '10 years of experience',
+                        const Color(0xFFE0F2F1),
+                      ),
+                      SizedBox(width: 8.w),
+                      _buildBadge('Full-time', const Color(0xFFFFF3E0)),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.verified, color: primaryColor, size: 20.sp),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Verified Pro',
+                        style: GoogleFonts.lora(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfileScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.edit, size: 18.sp),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Edit Profile',
+                            style: GoogleFonts.lora(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Overview Button
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  child: Text(
+                    'Overview',
+                    style: GoogleFonts.lora(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Contact Information
+            _buildSection(
+              'Contact Information',
+              Column(
+                children: [
+                  _buildContactItem(Icons.phone, '(555) 123-4567'),
+                  SizedBox(height: 12.h),
+                  _buildContactItem(
+                    Icons.email,
+                    'sarah.johnson@realestate.com',
+                  ),
+                ],
+              ),
+            ),
+
+            // About
+            _buildSection(
+              'About',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Experienced real estate agent specializing in residential properties with over 10 years in the Springfield market. Dedicated to helping families find their perfect home.',
+                    style: GoogleFonts.lora(
+                      fontSize: 14.sp,
+                      color: Colors.grey[700],
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Wrap(
+                    spacing: 8.w,
+                    runSpacing: 8.h,
+                    children: [
+                      _buildInfoChip('English', const Color(0xFFE0F2F1)),
+                      _buildInfoChip('License: IL-RE-42345', Colors.grey[200]!),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Service Areas
+            _buildSection(
+              'Service Areas',
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  _buildAreaChip('Springfield'),
+                  _buildAreaChip('Downtown'),
+                  _buildAreaChip('Suburban Areas'),
+                ],
+              ),
+            ),
+
+            // Property Types
+            _buildSection(
+              'Property Types',
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  _buildTypeChip('Single Family'),
+                  _buildTypeChip('Condos'),
+                  _buildTypeChip('Townhouses'),
+                ],
+              ),
+            ),
+            SizedBox(height: 20.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color bgColor) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.lora(fontSize: 12.sp, color: primaryText),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, Widget content) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.lora(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: primaryText,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          content,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 20.sp, color: primaryColor),
+        SizedBox(width: 12.w),
+        Text(
+          text,
+          style: GoogleFonts.lora(fontSize: 14.sp, color: Colors.grey[700]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(String text, Color bgColor) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.lora(fontSize: 12.sp, color: primaryText),
+      ),
+    );
+  }
+
+  Widget _buildAreaChip(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.lora(fontSize: 13.sp, color: primaryText),
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.lora(fontSize: 13.sp, color: primaryText),
+      ),
+    );
+  }
+}

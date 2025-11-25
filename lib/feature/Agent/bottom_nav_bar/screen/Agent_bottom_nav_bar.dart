@@ -4,10 +4,10 @@ import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
 import '../../../../core/const/app_colors.dart';
-import '../../../Sellers/Sellersetting/Profile/Screens/ProfileScreen.dart';
-import '../../../chat/screen/ChatListScreen.dart';
 import '../../Home/Screen/AgentHomeScreen.dart';
 import '../../CreateListing/screens/AgentCreateListingScreen.dart';
+import '../../../chat/screen/ChatListScreen.dart';
+import '../../Settings/screens/AgentSettingsScreen.dart';
 
 // Placeholder for BottomNavbarController if not defined in your project
 class AgentBottomNavbarController extends GetxController {
@@ -34,7 +34,7 @@ class _AgentBottomNavbarState extends State<AgentBottomNavbar> {
     AgentHomeScreen(),
     AgentCreateListingScreen(),
     ChatListScreen(),
-    SellerProfileScreen(),
+    AgentSettingsScreen(),
   ];
 
   @override
