@@ -7,10 +7,12 @@ import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/DeleteAccount/screens/DeleteAccountScreen.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/PrivacySecurity/screen/PrivacySecurityScreen.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/TermsConditions/Screen/TermsConditionsScreen.dart';
+import 'package:pine_rever_realty/feature/auth/roleSelect/screens/roleSelectScreen.dart';
 import 'AgentProfileScreen.dart';
 import 'ScheduleListScreen.dart';
 import 'PropertyListScreen.dart';
 import 'ChangePasswordScreen.dart';
+import '../../../Buyers/setting/ExclusiveAgreementScreen.dart';
 
 class AgentSettingsScreen extends StatelessWidget {
   const AgentSettingsScreen({super.key});
@@ -153,6 +155,7 @@ class AgentSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
+
                   _buildDivider(),
                   _buildSettingsItem(
                     icon: Icons.lock_outline,
@@ -165,6 +168,7 @@ class AgentSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
+
                   _buildDivider(),
                   _buildSettingsItem(
                     icon: Icons.security_outlined,
@@ -290,13 +294,7 @@ class AgentSettingsScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close dialog
-                      // Perform actual logout navigation
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/signin',
-                        (route) => false,
-                      );
+                      Get.to(roleSelect());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF0000), // Bright Red

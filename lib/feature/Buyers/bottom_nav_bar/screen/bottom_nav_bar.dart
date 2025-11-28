@@ -78,7 +78,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
             color: Colors.white,
             tabs: const [
               GButton(icon: Icons.home, text: 'Home'),
-              GButton(icon: Icons.favorite_border, text: 'Likes'),
+              GButton(icon: Icons.favorite_border, text: 'Save'),
               GButton(icon: Icons.message_outlined, text: 'Chat'),
               GButton(icon: Icons.settings_outlined, text: 'Settings'),
             ],

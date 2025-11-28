@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/instance_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pine_rever_realty/feature/Buyers/setting/ExclusiveAgreementScreen.dart';
+import 'package:pine_rever_realty/feature/auth/roleSelect/screens/roleSelectScreen.dart';
 
 import '../../ mortgage_Pre-approval_letter/screen/ Mortgage_pre-approval_letter.dart';
 import '../../../../../core/const/app_colors.dart';
@@ -270,6 +272,13 @@ class ProfileScreen extends StatelessWidget {
                           },
                         ),
                         _buildSettingItem(
+                          icon: Icons.assignment_outlined,
+                          title: 'Buyer Agreement',
+                          onTap: () {
+                            Get.to(ExclusiveAgreementScreen());
+                          },
+                        ),
+                        _buildSettingItem(
                           icon: Icons.password,
                           title: 'Change Password',
                           onTap: () {
@@ -415,13 +424,7 @@ class ProfileScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close dialog
-                      // Perform actual logout navigation
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/signin',
-                        (route) => false,
-                      );
+                      Get.to(roleSelect());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF0000), // Bright Red

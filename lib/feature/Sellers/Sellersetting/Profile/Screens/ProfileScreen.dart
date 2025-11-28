@@ -5,6 +5,7 @@ import 'package:get/instance_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../core/const/app_colors.dart';
+import '../../../../auth/roleSelect/screens/roleSelectScreen.dart';
 import '../../ChangePasswordScreen/screen/ChangePasswordScreen.dart';
 import '../../DeleteAccount/screens/DeleteAccountScreen.dart';
 import '../../EditProfile/Screen/editProfileScreen.dart';
@@ -405,13 +406,7 @@ class SellerProfileScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close dialog
-                      // Perform actual logout navigation
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/signin',
-                        (route) => false,
-                      );
+                      Get.to(roleSelect());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF0000), // Bright Red
