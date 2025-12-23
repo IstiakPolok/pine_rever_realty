@@ -166,8 +166,8 @@ class _roleSelectState extends State<roleSelect> {
                 if (_selectedUserType == 'Buyer') {
                   Get.to(() => const OnBoarding2(userRole: 'Buyer'));
                 } else if (_selectedUserType == 'Seller') {
-                  // Replace with your Seller screen
-                  Get.to(() => SellerBottomNavbar());
+                  Get.to(() => const OnBoarding2(userRole: 'Seller'));
+                  //Get.to(() => SellerBottomNavbar());
                 } else if (_selectedUserType == 'Agent') {
                   // Replace with your Agent screen
                   Get.to(() => const OnBoarding2(userRole: 'Agent'));

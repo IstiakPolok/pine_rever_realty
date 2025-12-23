@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +13,9 @@ import '../../../../core/const/custombackbutton.dart';
 import '../controller/resetPassController.dart';
 
 class resetPassScreen extends StatefulWidget {
-  const resetPassScreen({super.key});
+  final String email;
+  final String otp;
+  const resetPassScreen({super.key, required this.email, required this.otp});
 
   @override
   State<resetPassScreen> createState() => _resetPassScreenState();
@@ -137,55 +141,109 @@ class _resetPassScreenState extends State<resetPassScreen> {
                         opacity: _controller.isValid ? 1.0 : 0.5,
                         child: Custombutton(
                           text: 'Save Password',
-                          onPressed: () {
+                          onPressed: () async {
                             _controller.validatePassword();
                             _controller.validateConfirmPassword();
                             if (_controller.isValid) {
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) {
-                                  return AlertDialog(
-                                    backgroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          'assets/image/passchange.jpg',
-                                          width: 200.w,
-                                          height: 200.w,
-                                        ),
-
-                                        Text(
-                                          'Updated Successfully',
-                                          style: GoogleFonts.lora(
-                                            fontSize: 14.sp,
-                                            fontWeight: FontWeight.bold,
-                                            color: primaryText,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        SizedBox(height: 12.h),
-
-                                        Padding(
-                                          padding: const EdgeInsets.all(12.0),
-                                          child: Custombutton(
-                                            text: 'Go to Login',
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                              Get.offAll(LoginScreen());
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                              // Integrate reset password API
+                              final newPassword =
+                                  _controller.passwordController.text;
+                              final newPassword2 =
+                                  _controller.confirmPasswordController.text;
+                              print(
+                                '🔑 ResetPassScreen: Email: ${widget.email}, OTP: ${widget.otp}, New Password: $newPassword',
                               );
+                              try {
+                                final response = await http.post(
+                                  Uri.parse(
+                                    'http://10.10.13.27:8005/api/v1/common/reset-password/',
+                                  ),
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: jsonEncode({
+                                    "email": widget.email,
+                                    "otp": widget.otp,
+                                    "new_password": newPassword,
+                                    "new_password2": newPassword2,
+                                  }),
+                                );
+                                print(
+                                  '📊 ResetPassScreen: Response status: \\${response.statusCode}',
+                                );
+                                print(
+                                  '📄 ResetPassScreen: Response body: \\${response.body}',
+                                );
+                                if (response.statusCode == 200) {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        backgroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Image.asset(
+                                              'assets/image/passchange.jpg',
+                                              width: 200.w,
+                                              height: 200.w,
+                                            ),
+                                            Text(
+                                              'Updated Successfully',
+                                              style: GoogleFonts.lora(
+                                                fontSize: 14.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: primaryText,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            SizedBox(height: 12.h),
+                                            Padding(
+                                              padding: const EdgeInsets.all(
+                                                12.0,
+                                              ),
+                                              child: Custombutton(
+                                                text: 'Go to Login',
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                  Get.offAll(LoginScreen());
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                } else {
+                                  String errorMsg =
+                                      'Failed to reset password. Please try again.';
+                                  try {
+                                    final Map<String, dynamic> data =
+                                        response.body.isNotEmpty
+                                        ? jsonDecode(response.body)
+                                        : {};
+                                    if (data.containsKey('message')) {
+                                      errorMsg = data['message'].toString();
+                                    }
+                                  } catch (e) {
+                                    print(
+                                      '❌ ResetPassScreen: Error parsing error response: $e',
+                                    );
+                                  }
+                                  Get.snackbar('Error', errorMsg);
+                                }
+                              } catch (e) {
+                                print('❌ ResetPassScreen: Exception: $e');
+                                Get.snackbar(
+                                  'Error',
+                                  'An error occurred. Please try again.',
+                                );
+                              }
                             }
                           },
                         ),

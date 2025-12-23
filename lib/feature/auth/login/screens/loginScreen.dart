@@ -14,10 +14,27 @@ import '../../signUp/screens/signScreen.dart';
 import '../../signUp/screens/AgentSignUpScreen.dart';
 import '../../../Agent/bottom_nav_bar/screen/Agent_bottom_nav_bar.dart';
 import '../../../Sellers/bottom_nav_bar/screen/Seller_bottom_nav_bar.dart';
+import '../controller/login_controller.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   final String userRole;
   const LoginScreen({super.key, this.userRole = 'Buyer'});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final LoginController _loginController = Get.put(LoginController());
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +84,11 @@ class LoginScreen extends StatelessWidget {
 
                     // Email Field
                     _buildLabel('Email'),
-                    AuthTextField(hint: 'Email', obscureText: false),
+                    AuthTextField(
+                      hint: 'Email',
+                      obscureText: false,
+                      controller: _emailController,
+                    ),
                     SizedBox(height: 24.h),
 
                     // Password Field
@@ -76,6 +97,7 @@ class LoginScreen extends StatelessWidget {
                       hint: '**************',
                       obscureText: true,
                       enableVisibilityToggle: true,
+                      controller: _passwordController,
                     ),
                     SizedBox(height: 16.h),
 
@@ -99,26 +121,54 @@ class LoginScreen extends StatelessWidget {
                     SizedBox(height: 24.h),
 
                     // Sign In Button
-                    // _buildAuthButton(
-                    //   text: 'Sign in',
-                    //   backgroundColor: secondaryColor,
-                    //   textColor: Colors.white,
-                    //   onPressed: () {
-                    //     // Handle sign in logic
-                    //   },
-                    // ),
-                    Custombutton(
-                      text: 'Sign In',
-                      onPressed: () {
-                        if (userRole == 'Agent') {
-                          Get.to(() => const AgentBottomNavbar());
-                        } else if (userRole == 'Seller') {
-                          Get.to(() => SellerBottomNavbar());
-                        } else {
-                          Get.to(() => const BottomNavbar());
-                        }
-                      },
-                      color: secondaryColor,
+                    Obx(
+                      () => Custombutton(
+                        text: _loginController.isLoading.value
+                            ? 'Signing In...'
+                            : 'Sign In',
+                        onPressed: _loginController.isLoading.value
+                            ? () {}
+                            : () async {
+                                // Validate inputs
+                                if (_emailController.text.trim().isEmpty) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Please enter your email',
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                  return;
+                                }
+                                if (_passwordController.text.isEmpty) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Please enter your password',
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                  return;
+                                }
+
+                                // Call login API
+                                final success = await _loginController.login(
+                                  email: _emailController.text.trim(),
+                                  password: _passwordController.text,
+                                  role: widget.userRole,
+                                );
+
+                                if (success) {
+                                  // Navigate based on role
+                                  if (widget.userRole == 'Agent') {
+                                    Get.offAll(() => const AgentBottomNavbar());
+                                  } else if (widget.userRole == 'Seller') {
+                                    Get.offAll(() => SellerBottomNavbar());
+                                  } else {
+                                    Get.offAll(() => const BottomNavbar());
+                                  }
+                                }
+                              },
+                        color: secondaryColor,
+                      ),
                     ),
                     SizedBox(height: 32.h),
 
@@ -143,7 +193,7 @@ class LoginScreen extends StatelessWidget {
                               // Add recognizer to make it tappable
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  if (userRole == 'Agent') {
+                                  if (widget.userRole == 'Agent') {
                                     Get.to(() => const AgentSignUpScreen());
                                   } else {
                                     Get.to(() => const SignUpScreen());

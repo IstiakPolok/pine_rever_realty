@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/const/app_colors.dart';
+import '../../../../../core/models/selling_request_response.dart';
+import '../../../../../core/services_class/local_service/shared_preferences_helper.dart';
 
+import '../../../../core/network_caller/endpoints.dart';
 import '../../Notification/screen/NotificationScreen.dart';
 import 'PropertiesRequestFormScreen.dart';
 
@@ -16,175 +21,214 @@ class SallerHomeScreen extends StatefulWidget {
 }
 
 class _SallerHomeScreenState extends State<SallerHomeScreen> {
-  // Mock Data for Selling Requests
-  final List<Map<String, dynamic>> _sellingRequests = [
-    {
-      "name": "Esther Howard",
-      "propertyTitle": "Modern Family Home",
-      "description":
-          "I am relocating to another city for work and want to sell the property quickly",
-      "timeRange": "11 Nov, 2025 - 12 Dec, 2025",
-      "email": "johndoe@example.com",
-      "phone": "+1 (555) 234-7890",
-      "askingPrice": "\$450,000",
-      "agent": "Emily Rodriguez",
-      "status": "Pending",
-    },
-    {
-      "name": "Wade Warren",
-      "propertyTitle": "Downtown Luxury Apartment",
-      "description":
-          "Looking to upgrade to a larger home and need to sell current property",
-      "timeRange": "15 Nov, 2025 - 20 Dec, 2025",
-      "email": "wade.warren@example.com",
-      "phone": "+1 (555) 987-6543",
-      "askingPrice": "\$625,000",
-      "agent": "Michael Chen",
-      "status": "Pending",
-    },
-  ];
+  List<SellingRequest> _sellingRequests = [];
+  bool isLoading = true;
+
   static const Color _cardBg = Color(0xFFEEF6F4);
 
   @override
+  void initState() {
+    super.initState();
+    fetchSellingRequests();
+  }
+
+  Future<void> fetchSellingRequests() async {
+    try {
+      String? token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'No access token found');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(Urls.sellerSellingRequestslist),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final sellingResponse = SellingRequestsResponse.fromJson(data);
+        setState(() {
+          _sellingRequests = sellingResponse.results;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'Failed to load selling requests');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      Get.snackbar('Error', 'An error occurred: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Initialize ScreenUtil
-          return SingleChildScrollView(
-            child: Container(
-              width: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 50.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Top Bar
-                    _buildTopBar(),
-                    SizedBox(height: 20.h),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recent Request list',
-                          style: GoogleFonts.lora(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // --- Request Cards List ---
-                        ..._sellingRequests.map(
-                          (request) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildRequestCard(request),
-                          ),
-                        ),
-
-                        // --- Bottom Action Button ---
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Get.to(() => PropertiesRequestFormScreen());
-                            },
-                            icon: const Icon(Icons.add, color: Colors.white),
-                            label: Text(
-                              'Add New Selling Request',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+      body: RefreshIndicator(
+        onRefresh: fetchSellingRequests,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Initialize ScreenUtil
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 50.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Top Bar
+                      _buildTopBar(),
+                      SizedBox(height: 20.h),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Recent Request list',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: primaryText,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(height: 16),
+
+                          // --- Request Cards List ---
+                          ..._sellingRequests.map(
+                            (request) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildRequestCard(request),
+                            ),
+                          ),
+
+                          // --- Bottom Action Button ---
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await Get.to(
+                                  () => PropertiesRequestFormScreen(),
+                                );
+                                fetchSellingRequests();
+                              },
+                              icon: const Icon(Icons.add, color: Colors.white),
+                              label: Text(
+                                'Add New Selling Request',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildRequestCard(Map<String, dynamic> request) {
+  Widget _buildRequestCard(SellingRequest request) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: _cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Seller Name
           Text(
-            request['name'],
-            style: GoogleFonts.lora(
+            request.contactName,
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: primaryColor,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
+
+          // Selling Reason (Description)
           Text(
-            request['propertyTitle'],
-            style: GoogleFonts.lora(fontSize: 16, color: primaryText),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            request['description'],
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: primaryText,
+            request.sellingReason,
+            style: TextStyle(
+              fontSize: 14,
+              color: primaryText.withValues(alpha: 0.8),
               height: 1.5,
             ),
           ),
           const SizedBox(height: 16),
 
-          // Details Block
-          _buildDetailLine('Time: ', request['timeRange']),
+          // Details
+          _buildDetailLine(
+            'Time: ',
+            '${DateFormat('dd MMM, yyyy').format(DateTime.parse(request.startDate))} - ${DateFormat('dd MMM, yyyy').format(DateTime.parse(request.endDate))}',
+          ),
           const SizedBox(height: 4),
-          _buildDetailLine('Email: ', request['email']),
+          _buildDetailLine('Email: ', request.contactEmail),
           const SizedBox(height: 4),
-          _buildDetailLine('Phone Number: ', request['phone']),
-
+          _buildDetailLine(
+            'Phone Number: ',
+            request.contactPhone ?? 'Not provided',
+          ),
           const SizedBox(height: 20),
 
+          // Asking Price
           Text(
-            'Asking Price: ${request['askingPrice']}',
-            style: GoogleFonts.lora(
+            'Asking Price: \$${request.askingPrice}',
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: primaryColor,
             ),
           ),
-          const SizedBox(height: 4),
-          RichText(
-            text: TextSpan(
-              style: GoogleFonts.poppins(fontSize: 13, color: greyText),
-              children: [
-                const TextSpan(text: 'Agent: '),
-                TextSpan(
-                  text: request['agent'],
-                  style: GoogleFonts.poppins(color: primaryText),
-                ),
-              ],
+          const SizedBox(height: 8),
+
+          // Agent
+          if (request.agentName != null && request.agentName!.isNotEmpty)
+            Text(
+              'Agent: ${request.agentName}',
+              style: TextStyle(
+                fontSize: 14,
+                color: greyText,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
 
           const SizedBox(height: 24),
 
@@ -194,17 +238,23 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: secondaryColor,
+                backgroundColor: const Color(
+                  0xFFE67E22,
+                ), // Orange color from image
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 elevation: 0,
               ),
               child: Text(
-                request['status'],
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                request.status.substring(0, 1).toUpperCase() +
+                    request.status.substring(1).toLowerCase(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -216,12 +266,12 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
   Widget _buildDetailLine(String label, String value) {
     return RichText(
       text: TextSpan(
-        style: GoogleFonts.poppins(fontSize: 13, color: greyText),
+        style: TextStyle(fontSize: 13, color: greyText),
         children: [
           TextSpan(text: label),
           TextSpan(
             text: value,
-            style: GoogleFonts.poppins(color: primaryText),
+            style: TextStyle(color: primaryText),
           ),
         ],
       ),
@@ -237,7 +287,7 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
             const CircleAvatar(
               radius: 24,
               backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fit=crop&w=100&q=80',
+                'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=',
               ),
             ),
             SizedBox(width: 12.w),
@@ -246,7 +296,7 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
               children: [
                 Text(
                   'Hello',
-                  style: GoogleFonts.lora(
+                  style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: primaryColor,

@@ -7,12 +7,12 @@ import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/DeleteAccount/screens/DeleteAccountScreen.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/PrivacySecurity/screen/PrivacySecurityScreen.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/TermsConditions/Screen/TermsConditionsScreen.dart';
-import 'package:pine_rever_realty/feature/auth/roleSelect/screens/roleSelectScreen.dart';
+import 'package:pine_rever_realty/core/services_class/auth_service.dart';
 import 'AgentProfileScreen.dart';
 import 'ScheduleListScreen.dart';
 import 'PropertyListScreen.dart';
 import 'ChangePasswordScreen.dart';
-import '../../../Buyers/setting/ExclusiveAgreementScreen.dart';
+import '../../../Buyers/setting/buyerAgreementScreen.dart';
 
 class AgentSettingsScreen extends StatelessWidget {
   const AgentSettingsScreen({super.key});
@@ -203,7 +203,7 @@ class AgentSettingsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
+                onPressed: () async {
                   _showLogoutDialog(context);
                 },
                 style: OutlinedButton.styleFrom(
@@ -293,8 +293,9 @@ class AgentSettingsScreen extends StatelessWidget {
                 // Logout Button (Solid Red)
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Get.to(roleSelect());
+                    onPressed: () async {
+                      // Use AuthService to handle logout
+                      await AuthService.logout();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF0000), // Bright Red

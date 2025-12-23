@@ -1,5 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../../../core/network_caller/endpoints.dart';
+import '../../../../../core/services_class/local_service/shared_preferences_helper.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -17,6 +24,81 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _oldPassController = TextEditingController();
   final TextEditingController _newPassController = TextEditingController();
   final TextEditingController _confirmPassController = TextEditingController();
+
+  bool _isLoading = false;
+
+  Future<void> _changePassword() async {
+    final oldPass = _oldPassController.text.trim();
+    final newPass = _newPassController.text.trim();
+    final confirmPass = _confirmPassController.text.trim();
+
+    if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+      Get.snackbar('Error', 'Please fill all fields');
+      return;
+    }
+
+    if (newPass != confirmPass) {
+      Get.snackbar('Error', 'New password and confirmation do not match');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.snackbar('Error', 'No access token found');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse(Urls.sellerChangePassword),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'old_password': oldPass,
+          'new_password': newPass,
+          'new_password2': confirmPass,
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body = jsonDecode(response.body);
+        final message = body['message'] ?? 'Password changed successfully.';
+        Get.snackbar('Success', message);
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      } else {
+        String errorMsg = 'Failed to change password: ${response.statusCode}';
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map && body['message'] != null) {
+            errorMsg = body['message'];
+          } else if (body is Map && body['detail'] != null) {
+            errorMsg = body['detail'];
+          } else {
+            errorMsg = response.body;
+          }
+        } catch (_) {
+          errorMsg = response.body;
+        }
+        Get.snackbar('Error', errorMsg, snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'An error occurred: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +134,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             // Instructional Text
             Center(
               child: Text(
-                'Enter your current password and\ncreate a new on',
+                'Enter your current password and\ncreate a new one',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lora(
                   fontSize: 16,
@@ -92,15 +174,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Handle Update Logic
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password Updated Successfully!'),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _changePassword,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryGreen,
                   foregroundColor: Colors.white,
@@ -109,13 +183,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
-                  'Update Password',
-                  style: GoogleFonts.lora(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'Update Password',
+                        style: GoogleFonts.lora(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ),
             ),
           ],

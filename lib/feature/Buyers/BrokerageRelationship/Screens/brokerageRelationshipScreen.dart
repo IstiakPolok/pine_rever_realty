@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/instance_manager.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../../core/const/app_colors.dart';
 
 class BrokerageRelationshipScreen extends StatefulWidget {

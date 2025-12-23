@@ -68,7 +68,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                         ),
                         child: Text(
                           'For Sale',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -87,7 +87,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                         ),
                         child: Text(
                           'House',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
                             color: primaryText,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -99,7 +99,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Modern Family Home',
-                    style: GoogleFonts.lora(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: primaryText,
@@ -116,7 +116,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                       const SizedBox(width: 4),
                       Text(
                         '123 Oak Street, Springfield',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
                         ),
@@ -126,7 +126,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   const SizedBox(height: 12),
                   Text(
                     '\$849,000',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: blueColor,
@@ -192,7 +192,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                         children: [
                           Text(
                             'Sarah Johnson',
-                            style: GoogleFonts.lora(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: primaryText,
@@ -200,7 +200,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                           ),
                           Text(
                             'Licensed Real Estate Agent',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
                             ),
@@ -243,7 +243,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                       icon: const Icon(Icons.calendar_today_outlined, size: 18),
                       label: Text(
                         'Schedule a Showing',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
@@ -273,7 +273,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         const SizedBox(height: 8),
         Text(
           text,
-          style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
       ],
     );
@@ -305,7 +305,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         child: Center(
           child: Text(
             text,
-            style: GoogleFonts.lora(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: primaryText,
@@ -323,7 +323,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
       children: [
         Text(
           'Beautiful house in a prime location. This stunning property features modern amenities, spacious rooms, and excellent natural lighting throughout. Perfect for families or professionals looking for a comfortable living space.',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             color: Colors.grey[600],
             height: 1.6,
             fontSize: 14,
@@ -346,11 +346,11 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.lora(fontSize: 15, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
           ),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: primaryText,
@@ -395,7 +395,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
               Expanded(
                 child: Text(
                   feature,
-                  style: GoogleFonts.lora(fontSize: 14, color: primaryText),
+                  style: TextStyle(fontSize: 14, color: primaryText),
                 ),
               ),
             ],

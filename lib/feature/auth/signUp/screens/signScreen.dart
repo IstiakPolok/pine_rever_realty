@@ -7,11 +7,14 @@ import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'package:pine_rever_realty/core/const/customButton.dart';
 
 import '../../../../core/const/custombackbutton.dart';
+import '../../../Sellers/bottom_nav_bar/screen/Seller_bottom_nav_bar.dart';
+import '../controller/signController.dart';
 import '../../login/screens/loginScreen.dart';
 import 'MortgageLetter.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final String userRole;
+  const SignUpScreen({super.key, this.userRole = 'Buyer'});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -29,6 +32,118 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final List<String> _bedroomOptions = ['1', '2', '3', '4', '5+'];
   final List<String> _bathroomOptions = ['1', '2', '3', '4+'];
+
+  // Text Controllers
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _priceRangeController = TextEditingController();
+  final _locationController = TextEditingController();
+
+  // Controller
+  final SignController _signController = Get.put(SignController());
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _phoneController.dispose();
+    _priceRangeController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  void _handleSignUp() async {
+    // Validation
+    if (_nameController.text.trim().isEmpty) {
+      Get.snackbar('Error', 'Please enter your name');
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      Get.snackbar('Error', 'Please enter your email');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      Get.snackbar('Error', 'Please enter your password');
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      Get.snackbar('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      Get.snackbar('Error', 'Please agree to the Terms & Privacy Policy');
+      return;
+    }
+
+    // Determine if it's Buyer or Seller based on userRole
+    bool success = false;
+
+    if (widget.userRole.toLowerCase() == 'seller') {
+      // Call Seller registration API
+      success = await _signController.registerSeller(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        password2: _confirmPasswordController.text,
+        phoneNumber: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
+        priceRange: _priceRangeController.text.trim().isNotEmpty
+            ? _priceRangeController.text.trim()
+            : null,
+        location: _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
+            : null,
+        bedrooms: _selectedBedrooms != null
+            ? int.tryParse(_selectedBedrooms!.replaceAll('+', ''))
+            : null,
+        bathrooms: _selectedBathrooms != null
+            ? int.tryParse(_selectedBathrooms!.replaceAll('+', ''))
+            : null,
+      );
+    } else {
+      // Call Buyer registration API
+      success = await _signController.registerBuyer(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        password2: _confirmPasswordController.text,
+        phoneNumber: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
+        priceRange: _priceRangeController.text.trim().isNotEmpty
+            ? _priceRangeController.text.trim()
+            : null,
+        location: _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
+            : null,
+        bedrooms: _selectedBedrooms != null
+            ? int.tryParse(_selectedBedrooms!.replaceAll('+', ''))
+            : null,
+        bathrooms: _selectedBathrooms != null
+            ? int.tryParse(_selectedBathrooms!.replaceAll('+', ''))
+            : null,
+      );
+    }
+
+    if (success) {
+      Get.snackbar('Success', 'Registration successful!');
+      if (widget.userRole.toLowerCase() == 'seller') {
+        Get.to(() => const SellerBottomNavbar());
+      } else {
+        Get.to(() => const MortgageLetterScreen());
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,18 +188,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   SizedBox(height: 32.h),
                   _buildLabel('Name'),
-                  _buildTextField(hint: 'Enter your full name'),
+                  _buildTextField(
+                    hint: 'Enter your full name',
+                    controller: _nameController,
+                  ),
                   SizedBox(height: 16.h),
                   _buildLabel('Email'),
                   _buildTextField(
                     hint: 'Enter your email',
                     keyboardType: TextInputType.emailAddress,
+                    controller: _emailController,
                   ),
                   SizedBox(height: 16.h),
                   _buildLabel('Password'),
                   _buildTextField(
                     hint: '*********',
                     obscureText: !_isPasswordVisible,
+                    controller: _passwordController,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible
@@ -104,6 +224,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildTextField(
                     hint: '*********',
                     obscureText: !_isConfirmPasswordVisible,
+                    controller: _confirmPasswordController,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isConfirmPasswordVisible
@@ -124,16 +245,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _buildTextField(
                     hint: 'Phone Number',
                     keyboardType: TextInputType.phone,
+                    controller: _phoneController,
                   ),
                   SizedBox(height: 16.h),
                   _buildLabel('Price Range'),
                   _buildTextField(
                     hint: 'Enter price',
                     keyboardType: TextInputType.number,
+                    controller: _priceRangeController,
                   ),
                   SizedBox(height: 16.h),
                   _buildLabel('Location'),
-                  _buildTextField(hint: 'Enter your preferred buying area'),
+                  _buildTextField(
+                    hint: 'Enter your preferred buying area',
+                    controller: _locationController,
+                  ),
                   SizedBox(height: 16.h),
                   Row(
                     children: [
@@ -223,11 +349,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ],
                   ),
                   SizedBox(height: 32.h),
-                  Custombutton(
-                    text: 'Sign up',
-                    onPressed: () {
-                      Get.to(() => const MortgageLetterScreen());
-                    },
+                  Obx(
+                    () => _signController.isLoading.value
+                        ? const Center(child: CircularProgressIndicator())
+                        : Custombutton(
+                            text: 'Sign up',
+                            onPressed: _handleSignUp,
+                          ),
                   ),
                   SizedBox(height: 24.h),
                   Align(
@@ -285,8 +413,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       decoration: InputDecoration(

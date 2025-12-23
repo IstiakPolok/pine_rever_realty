@@ -3,11 +3,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/instance_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pine_rever_realty/feature/Buyers/setting/ExclusiveAgreementScreen.dart';
+import 'package:pine_rever_realty/feature/Buyers/setting/buyerAgreementScreen.dart';
 import 'package:pine_rever_realty/feature/auth/roleSelect/screens/roleSelectScreen.dart';
 
 import '../../ mortgage_Pre-approval_letter/screen/ Mortgage_pre-approval_letter.dart';
 import '../../../../../core/const/app_colors.dart';
+import '../../../../../core/services_class/auth_service.dart';
 import '../../AgreementList/Screen/AgreementListScreen.dart';
 import '../../ChangePasswordScreen/screen/ChangePasswordScreen.dart';
 import '../../DeleteAccount/screens/DeleteAccountScreen.dart';
@@ -19,12 +20,8 @@ import '../../screens/ScheduleListScreen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // Colors
-
   static const Color _redColor = Color(0xFFE53935);
-  static const Color _bgGrey = Color(
-    0xFFF9F9F9,
-  ); // Light grey for list backgrounds
+  static const Color _bgGrey = Color(0xFFF9F9F9);
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +30,8 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- Header Section with Stack ---
             Stack(
-              clipBehavior: Clip.none, // Allow avatar to overlap
+              clipBehavior: Clip.none,
               alignment: Alignment.topCenter,
               children: [
                 Positioned(
@@ -119,8 +115,7 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
 
-            SizedBox(height: 70.h), // Space for the overlapping avatar
-            // --- Profile Info Card ---
+            SizedBox(height: 70.h),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Container(
@@ -256,16 +251,14 @@ class ProfileScreen extends StatelessWidget {
                           },
                         ),
                         _buildSettingItem(
-                          icon: Icons
-                              .handshake_outlined, // Handshake for Agreement
+                          icon: Icons.handshake_outlined,
                           title: 'Agreement List',
                           onTap: () {
                             Get.to(AgreementListScreen());
                           },
                         ),
                         _buildSettingItem(
-                          icon: Icons
-                              .verified_user_outlined, // Shield/Check for Mortgage
+                          icon: Icons.verified_user_outlined,
                           title: 'mortgage pre-approval letter',
                           onTap: () {
                             Get.to(EditMortgageLetterScreen());
@@ -275,7 +268,7 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.assignment_outlined,
                           title: 'Buyer Agreement',
                           onTap: () {
-                            Get.to(ExclusiveAgreementScreen());
+                            Get.to(buyerAgreementScreen());
                           },
                         ),
                         _buildSettingItem(
@@ -425,6 +418,7 @@ class ProfileScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       Get.to(roleSelect());
+                      AuthService.logout();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF0000), // Bright Red

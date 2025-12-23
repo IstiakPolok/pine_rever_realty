@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesHelper {
@@ -51,10 +52,15 @@ class SharedPreferencesHelper {
     return prefs.getString('user_name') ?? '';
   }
 
-  // Retrieve access token
+  // Retrieve access token (debug: prints token value)
   static Future<String?> getAccessToken() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    final token = prefs.getString(_accessTokenKey);
+    if (kDebugMode) {
+      // Print the token only during debug to avoid leaking in production logs
+      print('SharedPreferences: $_accessTokenKey = $token');
+    }
+    return token;
   }
 
   // Clear access token
@@ -63,6 +69,12 @@ class SharedPreferencesHelper {
     await prefs.remove(_accessTokenKey); // Clear the token
     await prefs.remove(_selectedRoleKey); // Clear the role
     await prefs.remove('isLogin'); // Clear the login status
+  }
+
+  // Save selected role
+  static Future<void> saveSelectedRole(String role) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_selectedRoleKey, role);
   }
 
   // Retrieve selected role
@@ -130,5 +142,10 @@ class SharedPreferencesHelper {
   static Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_id');
+  }
+
+  // Get SharedPreferences instance (for advanced usage)
+  static Future<SharedPreferences> getSharedPreferencesInstance() async {
+    return await SharedPreferences.getInstance();
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/const/app_colors.dart';
 import '../../home/screens/PropertiesRequestFormScreen.dart';
@@ -15,13 +14,10 @@ class AddSellingRequestScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+
         title: Text(
           'Add Selling Request',
-          style: GoogleFonts.lora(
+          style: TextStyle(
             color: Colors.black,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -39,9 +35,9 @@ class AddSellingRequestScreen extends StatelessWidget {
           children: [
             // Centered Text
             Text(
-              'Want to sell property through\nagent? Add properties selling post\n& sent request to an agent',
+              'Ready to sell your property? Provide a few details and we’ll connect you with a Pine River Realty agent to get started.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.lora(
+              style: TextStyle(
                 fontSize: 18,
                 color: primaryText,
                 height: 1.5, // Line height for readability
@@ -56,19 +52,11 @@ class AddSellingRequestScreen extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () {
                   Get.to(() => PropertiesRequestFormScreen());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Request feature coming soon!'),
-                    ),
-                  );
                 },
                 icon: const Icon(Icons.add, color: Colors.white),
                 label: Text(
                   'Add Selling Request',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,

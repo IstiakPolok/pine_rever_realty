@@ -6,6 +6,12 @@ import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/authTextfield.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
+import '../controller/forgotPassController.dart';
+import 'otpVerificationScreen.dart';
+import '../../../../core/const/app_colors.dart';
+import '../../../../core/const/authTextfield.dart';
+import '../../../../core/const/customButton.dart';
+import '../../../../core/const/custombackbutton.dart';
 import 'otpVerificationScreen.dart';
 
 class forgetpassScreen extends StatelessWidget {
@@ -13,17 +19,16 @@ class forgetpassScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ForgotPassController controller = Get.put(ForgotPassController());
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
-
       body: Stack(
         children: [
           Positioned.fill(
             child: Image.asset('assets/image/signInbg.png', fit: BoxFit.fill),
           ),
           Positioned(top: 30.h, left: 8.w, child: custombackbuttom()),
-
           // Main content
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -57,35 +62,35 @@ class forgetpassScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 40.h),
-
                 // Email Field
                 Align(
                   alignment: Alignment.centerLeft,
                   child: _buildLabel('Email'),
                 ),
-                AuthTextField(hint: 'Enter your email', obscureText: false),
-                SizedBox(height: 16.h),
-
-                // Forgot Password
-                SizedBox(height: 24.h),
-
-                // Sign In Button
-                // _buildAuthButton(
-                //   text: 'Sign in',
-                //   backgroundColor: secondaryColor,
-                //   textColor: Colors.white,
-                //   onPressed: () {
-                //     // Handle sign in logic
-                //   },
-                // ),
-                Custombutton(
-                  text: 'Send Code',
-                  onPressed: () {
-                    Get.to(const otpVerificationScreen());
-                  },
-                  color: secondaryColor,
+                TextField(
+                  controller: controller.emailController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 14.h,
+                    ),
+                  ),
                 ),
-
+                SizedBox(height: 16.h),
+                SizedBox(height: 24.h),
+                Obx(
+                  () => controller.isLoading.value
+                      ? const CircularProgressIndicator()
+                      : Custombutton(
+                          text: 'Send Code',
+                          onPressed: () => controller.sendResetCode(context),
+                          color: secondaryColor,
+                        ),
+                ),
                 SizedBox(height: 100.h),
               ],
             ),

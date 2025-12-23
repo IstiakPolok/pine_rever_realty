@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'package:pine_rever_realty/core/const/customButton.dart';
 import 'package:pine_rever_realty/core/const/custombackbutton.dart';
+import '../controller/signController.dart';
 import '../../login/screens/loginScreen.dart';
 import 'AgentMakeProfileScreen.dart';
 
@@ -20,6 +21,77 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _agreedToTerms = false;
+
+  // Text Controllers
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // Controller
+  final SignController _signController = Get.put(SignController());
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _handleSignUp() async {
+    // Validation
+    if (_firstNameController.text.trim().isEmpty) {
+      Get.snackbar('Error', 'Please enter your first name');
+      return;
+    }
+
+    if (_lastNameController.text.trim().isEmpty) {
+      Get.snackbar('Error', 'Please enter your last name');
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      Get.snackbar('Error', 'Please enter your email');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      Get.snackbar('Error', 'Please enter your password');
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      Get.snackbar('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      Get.snackbar('Error', 'Please agree to the Terms & Privacy Policy');
+      return;
+    }
+
+    // Generate username from email
+    final username = _emailController.text.trim().split('@').first + '_agent';
+
+    // Call Agent registration API
+    final success = await _signController.registerAgent(
+      username: username,
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      password2: _confirmPasswordController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+    );
+
+    if (success) {
+      Get.snackbar('Success', 'Registration successful!');
+      Get.to(() => const AgentMakeProfileScreen());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,14 +161,25 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
                     ),
                     SizedBox(height: 40.h),
 
-                    _buildLabel('Name'),
-                    _buildTextField(hint: 'Enter your full name'),
+                    _buildLabel('First Name'),
+                    _buildTextField(
+                      hint: 'Enter your first name',
+                      controller: _firstNameController,
+                    ),
+                    SizedBox(height: 16.h),
+
+                    _buildLabel('Last Name'),
+                    _buildTextField(
+                      hint: 'Enter your last name',
+                      controller: _lastNameController,
+                    ),
                     SizedBox(height: 16.h),
 
                     _buildLabel('Email'),
                     _buildTextField(
                       hint: 'Enter your email',
                       keyboardType: TextInputType.emailAddress,
+                      controller: _emailController,
                     ),
                     SizedBox(height: 16.h),
 
@@ -104,6 +187,7 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
                     _buildTextField(
                       hint: '*********',
                       obscureText: !_isPasswordVisible,
+                      controller: _passwordController,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
@@ -124,6 +208,7 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
                     _buildTextField(
                       hint: '*********',
                       obscureText: !_isConfirmPasswordVisible,
+                      controller: _confirmPasswordController,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isConfirmPasswordVisible
@@ -192,12 +277,14 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
                     ),
                     SizedBox(height: 32.h),
 
-                    Custombutton(
-                      text: 'Sign up',
-                      color: secondaryColor, // Orange color
-                      onPressed: () {
-                        Get.to(() => const AgentMakeProfileScreen());
-                      },
+                    Obx(
+                      () => _signController.isLoading.value
+                          ? const Center(child: CircularProgressIndicator())
+                          : Custombutton(
+                              text: 'Sign up',
+                              color: secondaryColor, // Orange color
+                              onPressed: _handleSignUp,
+                            ),
                     ),
                     SizedBox(height: 24.h),
 
@@ -260,8 +347,10 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       decoration: InputDecoration(

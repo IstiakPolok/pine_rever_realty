@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:pine_rever_realty/feature/Sellers/AddSellingRequest/screens/AddSellingRequestScreen.dart';
 
 import '../../../core/const/app_colors.dart';
 
@@ -106,10 +109,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     decoration: InputDecoration(
                       hintText: 'Type here',
                       hintStyle: TextStyle(color: Colors.grey[400]),
-                      suffixIcon: Icon(
-                        Icons.calendar_today_outlined,
-                        color: Colors.grey[400],
-                        size: 20,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          Icons.calendar_today_outlined,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                        onPressed: () {},
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,

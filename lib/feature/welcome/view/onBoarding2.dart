@@ -58,7 +58,7 @@ class _OnBoarding2State extends State<OnBoarding2> {
                   if (widget.userRole == 'Agent') {
                     Get.to(() => const AgentSignUpScreen());
                   } else {
-                    Get.to(() => const SignUpScreen());
+                    Get.to(() => SignUpScreen(userRole: widget.userRole));
                   }
                 },
               ),

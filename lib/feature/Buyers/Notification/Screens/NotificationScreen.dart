@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../ShowingAgreement/screen/ShowingAgreementScreen.dart';
 
 class NotificationScreen extends StatelessWidget {
@@ -13,11 +12,8 @@ class NotificationScreen extends StatelessWidget {
   static const Color _greenBtn = Color(0xFF2D6A5F);
   static const Color _redBtn = Color(0xFFD32F2F);
   static const Color _orangeDot = Color(0xFFE8772E);
-  static const Color _cardBorder = Color(0xFFEEEEEE); // Light grey border
-  static const Color _highlightBorder = Color(
-    0xFFE8772E,
-  ); // Orange border for unread/highlighted
-
+  static const Color _cardBorder = Color(0xFFEEEEEE);
+  static const Color _highlightBorder = Color(0xFFE8772E);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,7 +85,7 @@ class NotificationScreen extends StatelessWidget {
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE0F2F1), // Light teal bg
+                          color: const Color(0xFFE0F2F1),
                           borderRadius: BorderRadius.circular(20.r),
                         ),
                         child: Text(
@@ -112,10 +108,47 @@ class NotificationScreen extends StatelessWidget {
                   time: '5 hours ago',
                   isUnread: true,
                   hasActions: true,
-                  isHighlighted: true, // Orange border
+                  isHighlighted: true,
                 ),
 
-                // 2. Showing Scheduled Successful (With Property Content)
+                // Showing Updated
+                _buildNotificationCard(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Showing Updated',
+                  description:
+                      'Your showing details have been updated by your agent.',
+                  time: '2 hours ago',
+                  isUnread: true,
+                  isHighlighted: true,
+                  contentWidget: Text(
+                    'Your showing time & date has been changed. Check your schedule list for updates.',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: _textGrey,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+
+                // Showing Declined
+                _buildNotificationCard(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Showing Declined',
+                  description:
+                      'Your appointment scheduled has been declined by the agent. We apologize for the inconvenience and will contact you soon to arrange a new time.',
+                  time: '2 hours ago',
+                  isUnread: true,
+                  isHighlighted: true,
+                  contentWidget: _buildPropertyContent(
+                    image:
+                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=200&q=80',
+                    title: 'Luxury Downtown Condo',
+                    address: '456 Main Avenue, Downtown',
+                    dateTime: 'Nov 15, 2025  10:00 AM',
+                    agentName: 'Michael Chen',
+                  ),
+                ),
+
                 _buildNotificationCard(
                   icon: Icons.calendar_today_outlined,
                   title: 'Showing Scheduled Successful',
@@ -133,7 +166,6 @@ class NotificationScreen extends StatelessWidget {
                   ),
                 ),
 
-                // 3. Showing Schedule (With Property + Actions)
                 _buildNotificationCard(
                   icon: Icons.calendar_today_outlined,
                   title: 'Showing Schedule',
@@ -159,8 +191,8 @@ class NotificationScreen extends StatelessWidget {
                   title: 'New Property Match',
                   description: '3 new properties match your search criteria',
                   time: '2 days ago',
-                  isUnread: false, // No orange dot
-                  isHighlighted: false, // Grey border
+                  isUnread: false,
+                  isHighlighted: false,
                 ),
               ],
             ),
@@ -264,10 +296,8 @@ class NotificationScreen extends StatelessWidget {
             ],
           ),
 
-          // Optional Property Content
           if (contentWidget != null) ...[SizedBox(height: 16.h), contentWidget],
 
-          // Optional Actions
           if (hasActions) ...[
             SizedBox(height: 16.h),
             Row(
@@ -345,26 +375,6 @@ class NotificationScreen extends StatelessWidget {
                                         fit: BoxFit.contain,
                                       ),
                                     ),
-                                    // Positioned(
-                                    //   top: 0,
-                                    //   right: 0,
-                                    //   child: GestureDetector(
-                                    //     onTap: () =>
-                                    //         Navigator.of(context).pop(),
-                                    //     child: Container(
-                                    //       decoration: BoxDecoration(
-                                    //         color: Colors.grey[200],
-                                    //         shape: BoxShape.circle,
-                                    //       ),
-                                    //       padding: EdgeInsets.all(6.r),
-                                    //       child: Icon(
-                                    //         Icons.close,
-                                    //         size: 22.sp,
-                                    //         color: Colors.black,
-                                    //       ),
-                                    //     ),
-                                    //   ),
-                                    // ),
                                   ],
                                 ),
                               ),
@@ -415,7 +425,7 @@ class NotificationScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA), // Very light grey background
+        color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(

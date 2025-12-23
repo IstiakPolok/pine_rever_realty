@@ -4,18 +4,28 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pin_input_text_field/pin_input_text_field.dart';
 
+import 'package:pin_input_text_field/pin_input_text_field.dart';
 import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
+import '../controller/otpVerificationController.dart';
 import 'resetPassScreen.dart';
 
 class otpVerificationScreen extends StatelessWidget {
-  const otpVerificationScreen({super.key});
+  final String? email;
+  const otpVerificationScreen({super.key, this.email});
 
   @override
   Widget build(BuildContext context) {
+    final OtpVerificationController controller = Get.put(
+      OtpVerificationController(),
+    );
+    // Always set email in controller if provided
+    if (email != null && controller.email != email) {
+      controller.setEmail(email!);
+      print('📧 otpVerificationScreen: Email set in controller: $email');
+    }
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
@@ -30,7 +40,6 @@ class otpVerificationScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(height: 20.h),
-                // "Welcome Back" Title
                 Center(
                   child: Text(
                     'Verify Code',
@@ -42,7 +51,6 @@ class otpVerificationScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 12.h),
-                // Subtitle
                 Center(
                   child: Text(
                     "We've sent a 6-digit code to your email. \nEnter the code below to continue",
@@ -55,11 +63,11 @@ class otpVerificationScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 40.h),
-
                 SizedBox(
-                  height: 60.h, // Total height for input field area
+                  height: 50.h,
                   child: PinInputTextField(
-                    pinLength: 4,
+                    pinLength: 6,
+                    controller: controller.otpController,
                     decoration: BoxLooseDecoration(
                       strokeColorBuilder: PinListenColorBuilder(
                         Colors.grey,
@@ -67,35 +75,27 @@ class otpVerificationScreen extends StatelessWidget {
                       ),
                       radius: Radius.circular(3.r),
                       strokeWidth: 2.w,
-                      gapSpace: 40.w, // spacing between boxes
+                      gapSpace: 10.w,
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    // textStyle: const TextStyle(
-                    //   fontFamily: 'Inter',
-                    //   fontSize: 24,
-                    //   fontWeight: FontWeight.bold,
-                    //   color: Colors.black,
-                    // ),
                     onChanged: (value) {},
                     onSubmit: (pin) {
-                      print('Entered PIN: $pin');
+                      controller.otpController.text = pin;
+                      controller.verifyOtp(context);
                     },
                   ),
                 ),
-
                 SizedBox(height: 30.h),
-
-                /// Verify Button
-                Custombutton(
-                  text: 'Verify',
-                  onPressed: () {
-                    Get.to(resetPassScreen());
-                  },
+                Obx(
+                  () => controller.isLoading.value
+                      ? const CircularProgressIndicator()
+                      : Custombutton(
+                          text: 'Verify',
+                          onPressed: () => controller.verifyOtp(context),
+                        ),
                 ),
-
                 SizedBox(height: 30.h),
-
                 Align(
                   alignment: Alignment.center,
                   child: Text.rich(
@@ -113,12 +113,13 @@ class otpVerificationScreen extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             fontSize: 14.sp,
                           ),
-                          // Add recognizer to make it tappable
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              Navigator.of(
-                                context,
-                              ).pushReplacementNamed('/signup');
+                              // TODO: Implement resend logic if needed
+                              Get.snackbar(
+                                'Info',
+                                'Resend code feature coming soon.',
+                              );
                             },
                         ),
                       ],

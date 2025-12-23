@@ -1,13 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../../core/const/app_colors.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 
-class SellingRequestListScreen extends StatelessWidget {
+import '../../../../../core/const/app_colors.dart';
+import '../../../../../core/models/selling_request_response.dart';
+import '../../../../../core/network_caller/endpoints.dart';
+import '../../../../../core/services_class/local_service/shared_preferences_helper.dart';
+
+class SellingRequestListScreen extends StatefulWidget {
   const SellingRequestListScreen({super.key});
 
   @override
+  State<SellingRequestListScreen> createState() =>
+      _SellingRequestListScreenState();
+}
+
+class _SellingRequestListScreenState extends State<SellingRequestListScreen> {
+  List<SellingRequest> _sellingRequests = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSellingRequests();
+  }
+
+  Future<void> fetchSellingRequests() async {
+    try {
+      String? token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'No access token found');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(Urls.sellerSellingRequestslist),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final sellingResponse = SellingRequestsResponse.fromJson(data);
+        setState(() {
+          _sellingRequests = sellingResponse.results;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'Failed to load selling requests');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      Get.snackbar('Error', 'An error occurred: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -30,109 +94,115 @@ class SellingRequestListScreen extends StatelessWidget {
           child: Container(color: Colors.grey[200], height: 1.0),
         ),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(16.w),
-        itemCount: 1, // Example item
-        itemBuilder: (context, index) {
-          return _buildRequestCard();
-        },
+      body: RefreshIndicator(
+        onRefresh: fetchSellingRequests,
+        child: ListView.builder(
+          padding: EdgeInsets.all(16.w),
+          itemCount: _sellingRequests.length,
+          itemBuilder: (context, index) {
+            final req = _sellingRequests[index];
+            return Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: _buildRequestCard(req),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildRequestCard() {
+  Widget _buildRequestCard(SellingRequest request) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(16.w),
+      padding: const EdgeInsets.all(24),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF7F5), // Light greenish background
-        borderRadius: BorderRadius.circular(12.r),
+        color: const Color(0xFFEEF6F4),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Seller Name
           Text(
-            'Esther Howard',
-            style: GoogleFonts.lora(
-              fontSize: 16.sp,
+            request.contactName,
+            style: TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF2D6A5F), // Dark teal text
+              color: primaryColor,
             ),
           ),
-          SizedBox(height: 4.h),
+          const SizedBox(height: 8),
+
+          // Selling Reason (Description)
           Text(
-            'Modern Family Home',
-            style: GoogleFonts.poppins(fontSize: 14.sp, color: primaryText),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'I am relocating to another city for work and want to sell the property quickly',
-            style: GoogleFonts.poppins(
-              fontSize: 12.sp,
-              color: secondaryText,
+            request.sellingReason,
+            style: TextStyle(
+              fontSize: 14,
+              color: primaryText.withValues(alpha: 0.8),
               height: 1.5,
             ),
           ),
-          SizedBox(height: 12.h),
-          _buildInfoRow('Time:', '11 Nov, 2025 - 12 Dec, 2025'),
-          _buildInfoRow('Email:', 'johndoe@example.com'),
-          _buildInfoRow('Phone Number:', '+1 (555) 234-7890'),
-          SizedBox(height: 12.h),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Asking Price: ',
-                  style: GoogleFonts.lora(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF2D6A5F),
-                  ),
-                ),
-                TextSpan(
-                  text: '\$450,000',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.sp,
-                    color: secondaryText,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 16),
+
+          // Details
+          _buildDetailLine(
+            'Time: ',
+            '${DateFormat('dd MMM, yyyy').format(DateTime.parse(request.startDate))} - ${DateFormat('dd MMM, yyyy').format(DateTime.parse(request.endDate))}',
+          ),
+          const SizedBox(height: 4),
+          _buildDetailLine('Email: ', request.contactEmail),
+          const SizedBox(height: 4),
+          _buildDetailLine(
+            'Phone Number: ',
+            request.contactPhone ?? 'Not provided',
+          ),
+          const SizedBox(height: 20),
+
+          // Asking Price
+          Text(
+            'Asking Price: \$${request.askingPrice}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: primaryColor,
             ),
           ),
-          SizedBox(height: 4.h),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Agent: ',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.sp,
-                    color: secondaryText,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Emily Rodriguez',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.sp,
-                    color: secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: secondaryColor,
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Text(
-              'Pending',
-              style: GoogleFonts.poppins(
-                fontSize: 14.sp,
+          const SizedBox(height: 8),
+
+          // Agent
+          if (request.agentName != null && request.agentName!.isNotEmpty)
+            Text(
+              'Agent: ${request.agentName}',
+              style: TextStyle(
+                fontSize: 14,
+                color: greyText,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+              ),
+            ),
+
+          const SizedBox(height: 24),
+
+          // Status Button
+          SizedBox(
+            width: 140,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE67E22),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                request.status.substring(0, 1).toUpperCase() +
+                    request.status.substring(1).toLowerCase(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -141,21 +211,15 @@ class SellingRequestListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 4.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDetailLine(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(fontSize: 13, color: greyText),
         children: [
-          Text(
-            '$label ',
-            style: GoogleFonts.poppins(fontSize: 12.sp, color: secondaryText),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 12.sp, color: secondaryText),
-            ),
+          TextSpan(text: label),
+          TextSpan(
+            text: value,
+            style: TextStyle(color: primaryText),
           ),
         ],
       ),
