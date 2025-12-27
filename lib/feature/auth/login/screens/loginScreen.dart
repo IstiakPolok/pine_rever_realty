@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pine_rever_realty/feature/auth/roleSelect/screens/roleSelectScreen.dart';
 
 import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/authTextfield.dart';
@@ -162,8 +163,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Get.offAll(() => const AgentBottomNavbar());
                                   } else if (widget.userRole == 'Seller') {
                                     Get.offAll(() => SellerBottomNavbar());
+                                  } else if (widget.userRole == 'Buyer') {
+                                    Get.offAll(() => BottomNavbar());
                                   } else {
-                                    Get.offAll(() => const BottomNavbar());
+                                    Get.offAll(() => const roleSelect());
+                                    Get.snackbar(
+                                      'Error',
+                                      'LogIn again',
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
                                   }
                                 }
                               },

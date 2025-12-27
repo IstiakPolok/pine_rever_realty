@@ -40,6 +40,7 @@ class UserModel {
   final String? profilePicture;
   final String? licenseNumber;
   final String? agentPapers;
+  final String? availability;
   final String createdAt;
   final String updatedAt;
 
@@ -53,6 +54,7 @@ class UserModel {
     this.profilePicture,
     this.licenseNumber,
     this.agentPapers,
+    this.availability,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -68,6 +70,7 @@ class UserModel {
       profilePicture: json['profile_picture'],
       licenseNumber: json['license_number'],
       agentPapers: json['agent_papers'],
+      availability: json['availability'],
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
@@ -84,6 +87,7 @@ class UserModel {
       'profile_picture': profilePicture,
       'license_number': licenseNumber,
       'agent_papers': agentPapers,
+      'availability': availability,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };

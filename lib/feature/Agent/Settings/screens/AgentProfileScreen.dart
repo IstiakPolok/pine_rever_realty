@@ -3,9 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'EditProfileScreen.dart';
+import 'dart:convert';
+
+import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
 
 class AgentProfileScreen extends StatelessWidget {
-  const AgentProfileScreen({super.key});
+  final UserModel? user;
+
+  const AgentProfileScreen({super.key, this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -44,11 +49,18 @@ class AgentProfileScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 50.r,
                     backgroundColor: primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.person, size: 60.sp, color: primaryColor),
+                    backgroundImage: user?.profilePicture != null
+                        ? NetworkImage(user!.profilePicture!) as ImageProvider
+                        : null,
+                    child: user?.profilePicture == null
+                        ? Icon(Icons.person, size: 60.sp, color: primaryColor)
+                        : null,
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    'Sarah Johnson',
+                    user?.fullName.isNotEmpty == true
+                        ? user!.fullName
+                        : (user?.username ?? 'Agent'),
                     style: GoogleFonts.lora(
                       fontSize: 22.sp,
                       fontWeight: FontWeight.w600,
@@ -57,41 +69,56 @@ class AgentProfileScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    'Residential Properties',
+                    user?.username ?? 'Residential Properties',
                     style: GoogleFonts.lora(
                       fontSize: 14.sp,
                       color: Colors.grey[600],
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16.sp,
-                        color: Colors.grey[600],
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Springfield, IL',
-                        style: GoogleFonts.lora(
-                          fontSize: 13.sp,
-                          color: Colors.grey[600],
+                  if ((user?.phoneNumber ?? '').isNotEmpty)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.phone, size: 16.sp, color: Colors.grey[600]),
+                        SizedBox(width: 4.w),
+                        Text(
+                          user!.phoneNumber,
+                          style: GoogleFonts.lora(
+                            fontSize: 13.sp,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   SizedBox(height: 12.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildBadge(
-                        '10 years of experience',
+                        user?.licenseNumber != null
+                            ? 'License: ${user!.licenseNumber}'
+                            : 'License: N/A',
                         const Color(0xFFE0F2F1),
                       ),
                       SizedBox(width: 8.w),
-                      _buildBadge('Full-time', const Color(0xFFFFF3E0)),
+                      _buildBadge(
+                        // Map API enum to user-friendly label
+                        (() {
+                          const availabilityLabels = {
+                            'full-time': 'Full-time',
+                            'part-time': 'Part-time',
+                            'project-based': 'Project-based',
+                          };
+                          final av = user?.availability;
+                          if (av != null &&
+                              availabilityLabels.containsKey(av)) {
+                            return availabilityLabels[av]!;
+                          }
+                          return 'Member';
+                        })(),
+                        const Color(0xFFFFF3E0),
+                      ),
                     ],
                   ),
                   SizedBox(height: 16.h),
@@ -115,11 +142,16 @@ class AgentProfileScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const EditProfileScreen(),
-                          ),
-                        );
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditProfileScreen(user: user),
+                              ),
+                            )
+                            .then((v) {
+                              if (v == true) Navigator.of(context).pop(true);
+                            });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
@@ -181,11 +213,14 @@ class AgentProfileScreen extends StatelessWidget {
               'Contact Information',
               Column(
                 children: [
-                  _buildContactItem(Icons.phone, '(555) 123-4567'),
+                  _buildContactItem(
+                    Icons.phone,
+                    user?.phoneNumber ?? '(555) 123-4567',
+                  ),
                   SizedBox(height: 12.h),
                   _buildContactItem(
                     Icons.email,
-                    'sarah.johnson@realestate.com',
+                    user?.email ?? 'not-provided@example.com',
                   ),
                 ],
               ),
@@ -211,7 +246,10 @@ class AgentProfileScreen extends StatelessWidget {
                     runSpacing: 8.h,
                     children: [
                       _buildInfoChip('English', const Color(0xFFE0F2F1)),
-                      _buildInfoChip('License: IL-RE-42345', Colors.grey[200]!),
+                      _buildInfoChip(
+                        'License: ${user?.licenseNumber ?? 'N/A'}',
+                        Colors.grey[200]!,
+                      ),
                     ],
                   ),
                 ],
@@ -246,6 +284,19 @@ class AgentProfileScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h),
+            // Raw profile JSON (for debugging / display)
+            // if (user != null)
+            //   _buildSection(
+            //     'Raw profile data',
+            //     SelectableText(
+            //       const JsonEncoder.withIndent('  ').convert(user!.toJson()),
+            //       style: GoogleFonts.lora(
+            //         fontSize: 12.sp,
+            //         color: Colors.grey[800],
+            //       ),
+            //     ),
+            //   ),
+            // SizedBox(height: 20.h),
           ],
         ),
       ),

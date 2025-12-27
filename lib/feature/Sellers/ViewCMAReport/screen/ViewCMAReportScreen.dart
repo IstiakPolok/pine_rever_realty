@@ -1,10 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'dart:io';
+import 'package:mime/mime.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../core/const/app_colors.dart';
+import '../../../../core/network_caller/endpoints.dart';
+import '../../../../core/services_class/local_service/shared_preferences_helper.dart';
 
-class ViewCMAReportScreen extends StatelessWidget {
-  const ViewCMAReportScreen({super.key});
+class ViewCMAReportScreen extends StatefulWidget {
+  final int sellingRequestId;
+  const ViewCMAReportScreen({super.key, required this.sellingRequestId});
+
+  @override
+  State<ViewCMAReportScreen> createState() => _ViewCMAReportScreenState();
+}
+
+class _ViewCMAReportScreenState extends State<ViewCMAReportScreen> {
+  List<PlatformFile> _selectedFiles = [];
+  bool _isUploading = false;
+  String _uploadResult = '';
+
+  late TextEditingController _titleController;
 
   // Colors
   // Dark green for button
@@ -14,6 +36,18 @@ class ViewCMAReportScreen extends StatelessWidget {
   static const Color _docBg = Color(
     0xFFEAEAEA,
   ); // Light grey for doc placeholders
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +159,7 @@ class ViewCMAReportScreen extends StatelessWidget {
 
                         // "Upload Documents or Photos" Text
                         Text(
-                          'Upload Documents or Photos',
+                          'Upload Documents or Photos to Get CMA Report',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.lora(
                             fontSize: 16,
@@ -148,7 +182,7 @@ class ViewCMAReportScreen extends StatelessWidget {
 
                         // "Choose Files" Button
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: _pickFiles,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _borderGreen, // Dark teal
                             foregroundColor: Colors.white,
@@ -169,6 +203,107 @@ class ViewCMAReportScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
+
+                        // Document title (required)
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: 'Document title (required)',
+                            hintText: 'Enter document title',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Selected files list
+                        if (_selectedFiles.isNotEmpty) ...[
+                          SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Selected files:',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          ..._selectedFiles.map(
+                            (f) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.insert_drive_file,
+                                    size: 18,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      f.name,
+                                      style: GoogleFonts.poppins(fontSize: 13),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedFiles.remove(f);
+                                      });
+                                    },
+                                    icon: const Icon(Icons.close, size: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isUploading ? null : _uploadFiles,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: _isUploading
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Upload Files',
+                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_uploadResult.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _uploadResult,
+                            style: GoogleFonts.poppins(color: primaryText),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -176,15 +311,15 @@ class ViewCMAReportScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // Document Placeholders Row
-                  Row(
-                    children: [
-                      _buildDocPlaceholder(),
-                      const SizedBox(width: 16),
-                      _buildDocPlaceholder(),
-                      const SizedBox(width: 16),
-                      _buildDocPlaceholder(),
-                    ],
-                  ),
+                  // Row(
+                  //   children: [
+                  //     _buildDocPlaceholder(),
+                  //     const SizedBox(width: 16),
+                  //     _buildDocPlaceholder(),
+                  //     const SizedBox(width: 16),
+                  //     _buildDocPlaceholder(),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
@@ -192,32 +327,32 @@ class ViewCMAReportScreen extends StatelessWidget {
             const SizedBox(height: 40),
 
             // --- View CMA Report Button ---
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle View Report
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening Report...')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'View CMA Report',
-                  style: GoogleFonts.lora(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: ElevatedButton(
+            //     onPressed: () {
+            //       // Handle View Report
+            //       ScaffoldMessenger.of(context).showSnackBar(
+            //         const SnackBar(content: Text('Opening Report...')),
+            //       );
+            //     },
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: primaryColor,
+            //       foregroundColor: Colors.white,
+            //       padding: const EdgeInsets.symmetric(vertical: 16),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //     ),
+            //     child: Text(
+            //       'View CMA Report',
+            //       style: GoogleFonts.lora(
+            //         fontSize: 16,
+            //         fontWeight: FontWeight.w500,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 20),
           ],
         ),
@@ -242,5 +377,142 @@ class ViewCMAReportScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _pickFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        withData: true,
+      );
+
+      if (result == null) {
+        Get.snackbar('Cancelled', 'No files selected');
+        return;
+      }
+
+      setState(() {
+        _selectedFiles = result.files;
+      });
+
+      print('Selected ${_selectedFiles.length} file(s)');
+      for (var f in _selectedFiles) {
+        print(' - ${f.name} (size=${f.size} bytes, path=${f.path})');
+      }
+    } catch (e) {
+      print('Error picking files: $e');
+      Get.snackbar('Error', 'Failed to pick files');
+    }
+  }
+
+  Future<void> _uploadFiles() async {
+    if (_selectedFiles.isEmpty) {
+      Get.snackbar('No files', 'Please select files to upload');
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+      _uploadResult = '';
+    });
+
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.snackbar('Error', 'No access token found');
+        setState(() => _isUploading = false);
+        return;
+      }
+
+      final url =
+          '${Urls.baseUrl}/seller/selling-requests/${widget.sellingRequestId}/documents/upload/';
+      print('Uploading ${_selectedFiles.length} files to $url');
+
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+
+      // Validate title (required by API)
+      final title = _titleController.text.trim();
+      if (title.isEmpty) {
+        Get.snackbar('Validation', 'Title is required');
+        setState(() => _isUploading = false);
+        return;
+      }
+
+      request.fields['title'] = title;
+      request.fields['document_type'] = 'other';
+      print('Upload fields: title=$title, document_type=other');
+
+      for (var f in _selectedFiles) {
+        final name = f.name;
+        Uint8List? bytes = f.bytes;
+        print(
+          'Preparing file: name=$name sizeField=${f.size} path=${f.path} bytesPresent=${bytes != null}',
+        );
+
+        if (bytes == null && f.path != null) {
+          try {
+            bytes = await File(f.path!).readAsBytes();
+            print(
+              'Read bytes from path ${f.path}: ${bytes.lengthInBytes} bytes',
+            );
+          } catch (e) {
+            print('Failed to read file bytes from path ${f.path}: $e');
+          }
+        }
+
+        if (bytes == null) {
+          print('Skipping $name: no bytes available');
+          continue;
+        }
+
+        final mimeType =
+            lookupMimeType(f.path ?? name) ?? 'application/octet-stream';
+        final parts = mimeType.split('/');
+
+        try {
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'files',
+              bytes,
+              filename: name,
+              contentType: MediaType(parts[0], parts[1]),
+            ),
+          );
+          print(
+            'Added file part: $name ($mimeType) size=${bytes.lengthInBytes}',
+          );
+        } catch (e) {
+          print(
+            'Error adding file part for $name: $e (bytes runtimeType=${bytes.runtimeType})',
+          );
+        }
+      }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      print('Upload response: ${response.statusCode} body=${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonBody = jsonDecode(response.body);
+        setState(() {
+          _uploadResult = jsonBody['message'] ?? 'Uploaded successfully';
+          _selectedFiles = [];
+          _titleController.clear();
+        });
+        Get.snackbar('Success', _uploadResult);
+        print('Upload succeeded: $_uploadResult');
+      } else {
+        Get.snackbar('Error', 'Upload failed: ${response.statusCode}');
+        print('Upload failed: ${response.statusCode} -> ${response.body}');
+      }
+    } catch (e) {
+      print('Error uploading files: $e');
+      Get.snackbar('Error', 'An error occurred during upload');
+    } finally {
+      setState(() => _isUploading = false);
+    }
   }
 }

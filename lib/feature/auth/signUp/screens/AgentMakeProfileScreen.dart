@@ -1,12 +1,39 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:pine_rever_realty/core/const/app_colors.dart';
+import 'package:pine_rever_realty/core/network_caller/endpoints.dart';
+import 'package:pine_rever_realty/core/services_class/local_service/shared_preferences_helper.dart';
 import '../../login/screens/loginScreen.dart';
 
-class AgentMakeProfileScreen extends StatelessWidget {
+class AgentMakeProfileScreen extends StatefulWidget {
   const AgentMakeProfileScreen({super.key});
+
+  @override
+  State<AgentMakeProfileScreen> createState() => _AgentMakeProfileScreenState();
+}
+
+class _AgentMakeProfileScreenState extends State<AgentMakeProfileScreen> {
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _licenseController = TextEditingController();
+
+  PlatformFile? _profilePictureFile;
+  PlatformFile? _agentPaperFile;
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _licenseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +72,25 @@ class AgentMakeProfileScreen extends StatelessWidget {
                       Container(
                         width: 80.w,
                         height: 80.w,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
+                        child: _profilePictureFile != null
+                            ? ClipOval(
+                                child: _profilePictureFile!.bytes != null
+                                    ? Image.memory(
+                                        _profilePictureFile!.bytes!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.file(
+                                        File(_profilePictureFile!.path!),
+                                        fit: BoxFit.cover,
+                                      ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -82,7 +124,7 @@ class AgentMakeProfileScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 8.h),
                         OutlinedButton(
-                          onPressed: () {},
+                          onPressed: _pickProfilePicture,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: primaryText,
                             side: BorderSide(color: Colors.grey[300]!),
@@ -102,6 +144,17 @@ class AgentMakeProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (_profilePictureFile != null) ...[
+                          SizedBox(height: 6.h),
+                          Text(
+                            _profilePictureFile!.name,
+                            style: GoogleFonts.lora(
+                              fontSize: 11.sp,
+                              color: secondaryText,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -115,10 +168,16 @@ class AgentMakeProfileScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildLabel('Full Name'),
-                  _buildTextField('Sarah Johnson'),
+                  _buildTextField(
+                    controller: _fullNameController,
+                    hint: 'Full Name',
+                  ),
                   SizedBox(height: 16.h),
                   _buildLabel('Phone Number'),
-                  _buildTextField('(555) 123-4567'),
+                  _buildTextField(
+                    controller: _phoneController,
+                    hint: 'Phone Number',
+                  ),
                 ],
               ),
             ),
@@ -129,7 +188,10 @@ class AgentMakeProfileScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildLabel('License Number'),
-                  _buildTextField('IL-RE-12345'),
+                  _buildTextField(
+                    controller: _licenseController,
+                    hint: 'IL-RE-12345',
+                  ),
                 ],
               ),
             ),
@@ -189,7 +251,7 @@ class AgentMakeProfileScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 16.h),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: _pickAgentPaper,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2D6A5F),
                             foregroundColor: Colors.white,
@@ -210,6 +272,17 @@ class AgentMakeProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (_agentPaperFile != null) ...[
+                          SizedBox(height: 8.h),
+                          Text(
+                            _agentPaperFile!.name,
+                            style: GoogleFonts.lora(
+                              fontSize: 11.sp,
+                              color: secondaryText,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -222,7 +295,7 @@ class AgentMakeProfileScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // Handle Clear
+                      _clearForm();
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: primaryText,
@@ -244,9 +317,7 @@ class AgentMakeProfileScreen extends StatelessWidget {
                 SizedBox(width: 16.w),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      _showVerifiedDialog(context);
-                    },
+                    onPressed: _isSubmitting ? null : _submitProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1B4D3E), // Dark Green
                       foregroundColor: Colors.white,
@@ -256,13 +327,24 @@ class AgentMakeProfileScreen extends StatelessWidget {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'Send to verify',
-                      style: GoogleFonts.lora(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: _isSubmitting
+                        ? SizedBox(
+                            height: 18.sp,
+                            width: 18.sp,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Send to verify',
+                            style: GoogleFonts.lora(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -321,13 +403,17 @@ class AgentMakeProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String hint) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFEAEAEA), // Light grey background
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.lora(color: primaryText, fontSize: 14.sp),
@@ -339,6 +425,157 @@ class AgentMakeProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _pickProfilePicture() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _profilePictureFile = result.files.first;
+      });
+    }
+  }
+
+  Future<void> _pickAgentPaper() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: false,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _agentPaperFile = result.files.first;
+      });
+    }
+  }
+
+  void _clearForm() {
+    _fullNameController.clear();
+    _phoneController.clear();
+    _licenseController.clear();
+    setState(() {
+      _profilePictureFile = null;
+      _agentPaperFile = null;
+    });
+  }
+
+  Future<void> _submitProfile() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.snackbar('Error', 'No access token found');
+        setState(() {
+          _isSubmitting = false;
+        });
+        return;
+      }
+
+      // Split full name into first and last
+      final name = _fullNameController.text.trim();
+      String firstName = '';
+      String lastName = '';
+      if (name.isNotEmpty) {
+        final parts = name.split(' ');
+        firstName = parts.first;
+        if (parts.length > 1) {
+          lastName = parts.sublist(1).join(' ');
+        }
+      }
+
+      final uri = Uri.parse(Urls.agentProfileUpdate);
+      final request = http.MultipartRequest('PATCH', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+
+      // Add text fields if provided
+      if (firstName.isNotEmpty) request.fields['first_name'] = firstName;
+      if (lastName.isNotEmpty) request.fields['last_name'] = lastName;
+      if (_phoneController.text.trim().isNotEmpty) {
+        request.fields['phone_number'] = _phoneController.text.trim();
+      }
+      if (_licenseController.text.trim().isNotEmpty) {
+        request.fields['license_number'] = _licenseController.text.trim();
+      }
+
+      // Optional: availability default if desired
+      // request.fields['availability'] = 'part-time';
+
+      // Add files
+      if (_profilePictureFile != null) {
+        if (_profilePictureFile!.path != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'profile_picture',
+              _profilePictureFile!.path!,
+              filename: _profilePictureFile!.name,
+            ),
+          );
+        } else if (_profilePictureFile!.bytes != null) {
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'profile_picture',
+              _profilePictureFile!.bytes!,
+              filename: _profilePictureFile!.name,
+            ),
+          );
+        }
+      }
+
+      if (_agentPaperFile != null && _agentPaperFile!.path != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'agent_papers',
+            _agentPaperFile!.path!,
+            filename: _agentPaperFile!.name,
+          ),
+        );
+      }
+
+      // Debug prints
+      print('AgentMakeProfileScreen._submitProfile: PATCH $uri');
+      print('AgentMakeProfileScreen._submitProfile: fields ${request.fields}');
+      print(
+        'AgentMakeProfileScreen._submitProfile: files ${request.files.map((f) => f.filename).toList()}',
+      );
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      print(
+        'AgentMakeProfileScreen._submitProfile: response ${response.statusCode}',
+      );
+      print('AgentMakeProfileScreen._submitProfile: body ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // Parse and optionally use response
+        try {
+          jsonDecode(response.body);
+        } catch (_) {}
+        _showVerifiedDialog(context);
+      } else {
+        String message = 'Submission failed (${response.statusCode})';
+        try {
+          final body = jsonDecode(response.body);
+          message = body['message']?.toString() ?? message;
+        } catch (_) {}
+        Get.snackbar('Error', message);
+      }
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   void _showVerifiedDialog(BuildContext context) {

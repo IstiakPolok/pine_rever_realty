@@ -20,6 +20,9 @@ class Urls {
   static const String sellerProfileUpdate = '$baseUrl/seller/profile/update/';
   static const String sellerChangePassword =
       '$baseUrl/seller/profile/change-password/';
+  // Agent profile endpoints
+  static const String agentProfileUpdate = '$baseUrl/agent/profile/update/';
+  static const String agentProfile = '$baseUrl/agent/profile/';
 
   // Old endpoints (kept for reference)
   static const String login = '$baseUrl/auth/login';
@@ -56,4 +59,12 @@ class Urls {
         return buyerRegister;
     }
   }
+
+  static const String conversationList = '$baseUrl/messaging/conversations/';
+
+  // WebSocket Base URL - replacing http with ws and removing /api/v1
+  static const String wsBaseUrl = 'ws://10.10.13.27:8005';
+
+  static String getCreateListingUrl(String agreementId) =>
+      '$baseUrl/agent/agreements/$agreementId/create-listing/';
 }

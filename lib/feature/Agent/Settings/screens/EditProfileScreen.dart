@@ -2,46 +2,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
+import 'package:get/get.dart';
+import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
+import 'package:pine_rever_realty/core/services_class/profile_service.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  final UserModel? user;
+
+  const EditProfileScreen({super.key, this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final TextEditingController _nameController = TextEditingController(
-    text: 'Sarah Johnson',
-  );
-  final TextEditingController _phoneController = TextEditingController(
-    text: '(555) 123-4567',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'sarah.johnson@realestate.com',
-  );
-  final TextEditingController _locationController = TextEditingController(
-    text: 'Springfield, IL',
-  );
-  final TextEditingController _specializationController = TextEditingController(
-    text: 'Residential',
-  );
-  final TextEditingController _licenseController = TextEditingController(
-    text: 'IL-RE-42345',
-  );
-  final TextEditingController _yearsExpController = TextEditingController(
-    text: '10',
-  );
-  final TextEditingController _idController = TextEditingController();
-  final TextEditingController _aboutController = TextEditingController(
-    text:
-        'Experienced real estate agent specializing in residential properties with over 10 years in the Springfield market. Dedicated to helping families find their perfect home.',
-  );
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _specializationController;
+  late final TextEditingController _licenseController;
+  late final TextEditingController _yearsExpController;
+  late final TextEditingController _idController;
+  late final TextEditingController _aboutController;
 
-  String _selectedAvailability = 'Full-time';
+  // API expects enum values: 'full-time', 'part-time', 'project-based'
+  String _selectedAvailability = 'full-time';
+
+  static const Map<String, String> _availabilityLabels = {
+    'full-time': 'Full-time',
+    'part-time': 'Part-time',
+    'project-based': 'Project-based',
+  };
   final List<String> _languages = ['English'];
   final List<String> _serviceAreas = ['Downtown', 'Suburban Areas'];
   final List<String> _propertyTypes = ['Single Family', 'Condos'];
+
+  PlatformFile? _profilePictureFile;
+  PlatformFile? _agentPapersFile;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill from passed user if available
+    final u = widget.user;
+    _nameController = TextEditingController(text: u?.fullName ?? '');
+    _phoneController = TextEditingController(text: u?.phoneNumber ?? '');
+    _emailController = TextEditingController(text: u?.email ?? '');
+    _locationController = TextEditingController(text: '');
+    _specializationController = TextEditingController(text: '');
+    _licenseController = TextEditingController(text: u?.licenseNumber ?? '');
+    _yearsExpController = TextEditingController(
+      text: u?.createdAt.isNotEmpty == true ? '' : '',
+    );
+    _idController = TextEditingController();
+    _aboutController = TextEditingController(text: '');
+
+    // If passed user has profile_picture or agent_papers urls, don't preload files (user must re-upload), but display name.
+    // keep defaults otherwise
+    // If user already has availability set by API, use it (assumed to be api enum like 'full-time')
+    _selectedAvailability = u?.availability ?? _selectedAvailability;
+  }
 
   @override
   void dispose() {
@@ -55,6 +80,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _idController.dispose();
     _aboutController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickProfilePicture() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _profilePictureFile = result.files.first);
+    }
+  }
+
+  Future<void> _pickAgentPaper() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _agentPapersFile = result.files.first);
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    final parts = _nameController.text.trim().split(' ');
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+    // Basic validation
+    if (_emailController.text.trim().isEmpty ||
+        !_emailController.text.contains('@')) {
+      Get.snackbar('Error', 'Please enter a valid email');
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'username': widget.user?.username ?? '',
+      'email': _emailController.text.trim(),
+      'first_name': firstName,
+      'last_name': lastName,
+      'phone_number': _phoneController.text.trim(),
+      'license_number': _licenseController.text.trim(),
+      'company_details': '',
+      'years_of_experience': int.tryParse(_yearsExpController.text) ?? null,
+      'area_of_expertise': _specializationController.text.trim(),
+      'languages': _languages.isNotEmpty ? _languages.join(',') : null,
+      'availability': _selectedAvailability,
+    }..removeWhere((k, v) => v == null || (v is String && v.isEmpty));
+
+    // Debug prints
+    print('EditProfileScreen._saveChanges: payload ${jsonEncode(payload)}');
+    print(
+      'EditProfileScreen._saveChanges: profile_picture_selected ${_profilePictureFile != null}',
+    );
+    print(
+      'EditProfileScreen._saveChanges: agent_papers_selected ${_agentPapersFile != null}',
+    );
+
+    setState(() => _isSaving = true);
+    UserModel? updated;
+    try {
+      // If files selected, use multipart
+      if (_profilePictureFile != null || _agentPapersFile != null) {
+        updated = await ProfileService.updateAgentProfileMultipart(
+          fields: payload.map((k, v) => MapEntry(k, v.toString())),
+          profilePicturePath: _profilePictureFile?.path,
+          profilePictureBytes: _profilePictureFile?.bytes,
+          profilePictureFilename: _profilePictureFile?.name,
+          agentPapersPath: _agentPapersFile?.path,
+          agentPapersBytes: _agentPapersFile?.bytes,
+          agentPapersFilename: _agentPapersFile?.name,
+        );
+      } else {
+        updated = await ProfileService.updateAgentProfile(payload);
+      }
+
+      if (updated != null) {
+        Get.snackbar('Success', 'Profile updated');
+        Navigator.of(context).pop(true);
+      } else {
+        Get.snackbar('Error', 'Failed to update profile');
+      }
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -126,7 +238,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                             SizedBox(height: 8.h),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _pickProfilePicture,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey[200],
                                 foregroundColor: Colors.black,
@@ -144,6 +256,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 style: GoogleFonts.lora(fontSize: 13.sp),
                               ),
                             ),
+                            if (_profilePictureFile != null) ...[
+                              SizedBox(height: 6.h),
+                              Text(
+                                _profilePictureFile!.name,
+                                style: GoogleFonts.lora(
+                                  fontSize: 12.sp,
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -171,6 +294,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildAvailabilityDropdown(),
               _buildTextField('About', _aboutController, maxLines: 4),
               _buildTextField('Certifications', TextEditingController()),
+              SizedBox(height: 12.h),
+              // Add profile picture preview row
+              if (_profilePictureFile != null)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    children: [
+                      _profilePictureFile!.bytes != null
+                          ? Image.memory(
+                              _profilePictureFile!.bytes!,
+                              width: 48.w,
+                              height: 48.w,
+                              fit: BoxFit.cover,
+                            )
+                          : (_profilePictureFile!.path != null
+                                ? Image.file(
+                                    File(_profilePictureFile!.path!),
+                                    width: 48.w,
+                                    height: 48.w,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const SizedBox()),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          _profilePictureFile!.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () =>
+                            setState(() => _profilePictureFile = null),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+            ]),
+
+            // Agent Papers Upload
+            _buildSection('Agent Papers', [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Attach your agent certificate',
+                    style: GoogleFonts.lora(
+                      fontSize: 12.sp,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _pickAgentPaper,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D6A5F),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 8.h,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text('Choose Files', style: GoogleFonts.lora()),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          _agentPapersFile?.name ?? 'No file chosen',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ]),
 
             // Languages
@@ -261,10 +470,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 SizedBox(width: 16.w),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Save changes
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: _isSaving ? null : _saveChanges,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
@@ -273,13 +479,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
-                    child: Text(
-                      'Save Changes',
-                      style: GoogleFonts.lora(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isSaving
+                        ? SizedBox(
+                            height: 18.sp,
+                            width: 18.sp,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Save Changes',
+                            style: GoogleFonts.lora(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -391,11 +608,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             isExpanded: true,
             underline: const SizedBox(),
             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-            items: ['Full-time', 'Part-time', 'Project-Based']
+            items: _availabilityLabels.entries
                 .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(item, style: GoogleFonts.lora(fontSize: 14.sp)),
+                  (entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(
+                      entry.value,
+                      style: GoogleFonts.lora(fontSize: 14.sp),
+                    ),
                   ),
                 )
                 .toList(),

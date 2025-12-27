@@ -153,6 +153,28 @@ class _PropertiesRequestFormScreenState
 
       if (response.statusCode == 201) {
         Get.snackbar('Success', 'Selling request submitted successfully');
+
+        // Create conversation with the selected agent
+        try {
+          final conversationResponse = await http.post(
+            Uri.parse('${Urls.baseUrl}/messaging/conversations/'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              "other_user_id": _selectedAgent!.id,
+            }),
+          );
+          if (conversationResponse.statusCode == 201 || conversationResponse.statusCode == 200) {
+            print('Conversation created successfully');
+          } else {
+            print('Failed to create conversation: ${conversationResponse.statusCode}');
+          }
+        } catch (e) {
+          print('Error creating conversation: $e');
+        }
+
         Navigator.of(context).pop();
       } else {
         Get.snackbar('Error', 'Failed to submit request');

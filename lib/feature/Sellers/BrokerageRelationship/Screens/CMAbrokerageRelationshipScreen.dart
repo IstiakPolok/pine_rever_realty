@@ -3,10 +3,11 @@ import 'package:get/get.dart';
 import 'package:get/instance_manager.dart';
 
 import '../../../../core/const/app_colors.dart';
-import 'ViewCMAReportScreen.dart';
+import 'ViewCMAFinalReportScreen.dart';
 
 class CMABrokerageRelationshipScreen extends StatefulWidget {
-  const CMABrokerageRelationshipScreen({super.key});
+  final int? cmaId;
+  const CMABrokerageRelationshipScreen({super.key, this.cmaId});
 
   @override
   State<CMABrokerageRelationshipScreen> createState() =>
@@ -128,7 +129,10 @@ class _CMABrokerageRelationshipScreenState
               child: ElevatedButton(
                 onPressed: _isAcknowledged
                     ? () {
-                        Get.to(() => const ViewCMAReportScreen());
+                        // Navigate to the final CMA report and pass cmaId if available
+                        Get.to(
+                          () => ViewCMAFinalReportScreen(cmaId: widget.cmaId),
+                        );
                       }
                     : null, // Disable button if not acknowledged
                 style: ElevatedButton.styleFrom(

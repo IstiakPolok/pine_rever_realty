@@ -5,13 +5,14 @@ import 'package:pine_rever_realty/feature/Sellers/ViewCMAReport/screen/ViewCMARe
 
 import '../../../../core/const/app_colors.dart';
 import '../../BrokerageRelationship/Screens/CMAbrokerageRelationshipScreen.dart';
+import '../controller/notification_controller.dart';
 import 'SellingAgreementScreen.dart';
 
 class sallerNotificationScreen extends StatelessWidget {
-  const sallerNotificationScreen({super.key});
+  sallerNotificationScreen({super.key});
 
+  final NotificationController controller = Get.put(NotificationController());
   static const Color _redBtn = Color(0xFFD32F2F);
-
   static const Color _cardBorder = Color(0xFFEEEEEE); // Light grey border
 
   @override
@@ -25,137 +26,192 @@ class sallerNotificationScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Notification',
-              style: GoogleFonts.lora(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+        title: Obx(
+          () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Notification',
+                style: GoogleFonts.lora(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            Text(
-              '4 unread message',
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12),
-            ),
-          ],
+              Text(
+                '${controller.unreadCount.value} unread message${controller.unreadCount.value != 1 ? 's' : ''}',
+                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2F1), // Light teal bg
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Mark all read',
+          Obx(
+            () => controller.unreadCount.value > 0
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: Center(
+                      child: InkWell(
+                        onTap: () => controller.markAllAsRead(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0F2F1), // Light teal bg
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Mark all read',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.notifications.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.errorMessage.isNotEmpty &&
+            controller.notifications.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load notifications',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: primaryText,
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => controller.fetchNotifications(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 1. Selling Request Approved
-          _buildNotificationCard(
-            icon: Icons.notifications_outlined,
-            title: 'Selling Request Approved',
-            description:
-                'Your property request has been accepted for review. Upload your property images or supporting documents so we can prepare your CMA report',
-            time: '5 hours ago',
-            isUnread: true,
-            isHighlighted: true,
-            customAction: _buildFullWidthButton(
-              label: 'View CMA Report',
-              icon: Icons.check,
-              onPressed: () {
-                Get.to(ViewCMAReportScreen());
-              },
-            ),
-          ),
+          );
+        }
 
-          // 2. Selling Request Declined
-          _buildNotificationCard(
-            icon: Icons.notifications_outlined,
-            title: 'Selling Request Declined',
-            description:
-                'Your property selling request has been declined by the agent. We will reach out to you shortly to discuss next steps or you can contact via chat.',
-            time: '5 hours ago',
-            isUnread: true,
-            isHighlighted: true,
-            customAction: _buildFullWidthButton(
-              label: 'Chat with Agent',
-              // No icon for this one based on image, or add chat icon
-              onPressed: () {
-                // Navigate to chat
-                Navigator.pushNamed(context, '/chat_detail');
-              },
+        if (controller.notifications.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.notifications_none,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No notifications yet',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
-          ),
+          );
+        }
 
-          // 3. Accept Selling Agreement
-          _buildNotificationCard(
-            icon: Icons.notifications_outlined,
-            title: 'Accept Selling Agreement',
-            description:
-                'By accepting selling agreement go for the further process.',
-            time: '5 hours ago',
-            isUnread: true,
-            isHighlighted: true,
-            hasDualActions: true, // Show Accept/Decline buttons
-            onAccept: () {
-              Get.to(() => const SellingAgreementScreen());
+        return RefreshIndicator(
+          onRefresh: () => controller.fetchNotifications(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: controller.notifications.length,
+            itemBuilder: (context, index) {
+              final notification = controller.notifications[index];
+              return _buildNotificationCard(notification);
             },
           ),
-
-          // 4. CMA Report
-          _buildNotificationCard(
-            icon: Icons.notifications_outlined,
-            title: 'CMA Report',
-            description:
-                'Your CMA report is ready. Your agent has completed the valuation of your Property',
-            time: '5 hours ago',
-            isUnread: true,
-            isHighlighted: true,
-            customAction: _buildFullWidthButton(
-              label: 'Open CMA',
-              icon: Icons.remove_red_eye_outlined,
-              onPressed: () {
-                Get.to(CMABrokerageRelationshipScreen());
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildNotificationCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required String time,
-    bool isUnread = false,
-    bool hasDualActions = false,
-    bool isHighlighted = false,
-    Widget? customAction, // For single full-width buttons
-    VoidCallback? onAccept,
-  }) {
+  Widget _buildNotificationCard(notification) {
+    // Determine action button and callback based on notification type
+    Widget? actionWidget;
+    bool hasDualActions = false;
+    VoidCallback? onAccept;
+
+    switch (notification.notificationType) {
+      case 'approved':
+        actionWidget = _buildFullWidthButton(
+          label: notification.actionText ?? 'View CMA Report',
+          icon: Icons.check,
+          onPressed: () {
+            controller.markAsRead(notification.id);
+            Get.to(
+              () => ViewCMAReportScreen(
+                sellingRequestId:
+                    notification.sellingRequestId ?? notification.id,
+              ),
+            );
+          },
+        );
+        break;
+      case 'declined':
+        actionWidget = _buildFullWidthButton(
+          label: 'Chat with Agent',
+          icon: Icons.chat_outlined,
+          onPressed: () {
+            controller.markAsRead(notification.id);
+            // Navigate to chat
+            Get.snackbar('Chat', 'Opening chat with agent...');
+          },
+        );
+        break;
+      case 'agreement':
+        hasDualActions = true;
+        onAccept = () {
+          controller.markAsRead(notification.id);
+          // Prefer explicit agreement id; fall back to extracting from actionUrl/message
+          final agreementId =
+              notification.agreementId ??
+              _extractAgreementId(
+                notification.actionUrl ?? notification.message,
+              );
+          Get.to(() => SellingAgreementScreen(agreementId: agreementId));
+        };
+        break;
+      case 'cma_ready':
+        actionWidget = _buildFullWidthButton(
+          label: notification.actionText ?? 'Open CMA',
+          icon: Icons.remove_red_eye_outlined,
+          onPressed: () {
+            controller.markAsRead(notification.id);
+            // Prefer explicit cma_id if present; fallback to extracting from actionUrl/message
+            final cmaId =
+                notification.cmaId ??
+                _extractCmaId(notification.actionUrl ?? notification.message);
+            Get.to(() => CMABrokerageRelationshipScreen(cmaId: cmaId));
+          },
+        );
+        break;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -163,8 +219,8 @@ class sallerNotificationScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isHighlighted ? secondaryColor : _cardBorder,
-          width: isHighlighted ? 1.5 : 1.0,
+          color: !notification.isRead ? secondaryColor : _cardBorder,
+          width: !notification.isRead ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -188,10 +244,10 @@ class sallerNotificationScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  icon,
+                  Icons.notifications_outlined,
                   color: secondaryText,
                   size: 20,
-                ), // Grey icon as per image
+                ),
               ),
               const SizedBox(width: 12),
               // Text Content
@@ -204,7 +260,7 @@ class sallerNotificationScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            title,
+                            notification.title,
                             style: GoogleFonts.lora(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -212,7 +268,7 @@ class sallerNotificationScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (isUnread)
+                        if (!notification.isRead)
                           Container(
                             width: 8,
                             height: 8,
@@ -225,7 +281,7 @@ class sallerNotificationScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      description,
+                      notification.message,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: secondaryText,
@@ -234,7 +290,7 @@ class sallerNotificationScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      time,
+                      notification.relativeTime,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: Colors.grey[400],
@@ -247,9 +303,9 @@ class sallerNotificationScreen extends StatelessWidget {
           ),
 
           // Custom Full Width Button
-          if (customAction != null) ...[
+          if (actionWidget != null) ...[
             const SizedBox(height: 16),
-            customAction,
+            actionWidget,
           ],
 
           // Dual Actions (Accept/Decline)
@@ -259,7 +315,7 @@ class sallerNotificationScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: onAccept ?? () {},
+                    onPressed: onAccept,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
@@ -272,10 +328,7 @@ class sallerNotificationScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.edit_outlined,
-                          size: 18,
-                        ), // Signature icon
+                        const Icon(Icons.edit_outlined, size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'Accept',
@@ -290,7 +343,10 @@ class sallerNotificationScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      controller.markAsRead(notification.id);
+                      Get.snackbar('Declined', 'Agreement declined');
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _redBtn,
                       side: const BorderSide(color: Color(0xFFFFEBEE)),
@@ -321,6 +377,32 @@ class sallerNotificationScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  int? _extractCmaId(String? text) {
+    if (text == null) return null;
+    final regex = RegExp(r'/seller/cma/(\d+)/?');
+    final match = regex.firstMatch(text);
+    if (match != null) {
+      return int.tryParse(match.group(1)!);
+    }
+    // Fallback: try to find any number in the text
+    final fallback = RegExp(r'(\d+)').firstMatch(text);
+    if (fallback != null) return int.tryParse(fallback.group(1)!);
+    return null;
+  }
+
+  int? _extractAgreementId(String? text) {
+    if (text == null) return null;
+    final regex = RegExp(r'/seller/agreements/(\d+)/?');
+    final match = regex.firstMatch(text);
+    if (match != null) {
+      return int.tryParse(match.group(1)!);
+    }
+    // Fallback: try to find any number in the text
+    final fallback = RegExp(r'(\d+)').firstMatch(text);
+    if (fallback != null) return int.tryParse(fallback.group(1)!);
+    return null;
   }
 
   Widget _buildFullWidthButton({

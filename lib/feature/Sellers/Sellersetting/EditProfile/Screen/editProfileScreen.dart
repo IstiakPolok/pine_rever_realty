@@ -6,6 +6,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../../core/const/app_colors.dart';
 import '../../../../../core/models/profile_response.dart';
@@ -27,6 +30,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _locationController;
   File? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
   bool _isUpdating = false;
 
   @override
@@ -64,6 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
+        withData: true, // ensure bytes available across platforms
       );
 
       if (result == null) {
@@ -73,22 +79,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
 
-      final picked = File(result.files.single.path!);
-      if (!picked.existsSync()) {
-        Get.snackbar('Error', 'Selected file does not exist');
-        print('pickImage: picked file does not exist -> ${picked.path}');
+      final pickedFile = result.files.single;
+
+      // Prefer path if available, otherwise use the in-memory bytes
+      if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
+        final picked = File(pickedFile.path!);
+        if (!picked.existsSync()) {
+          Get.snackbar('Error', 'Selected file does not exist');
+          print('pickImage: picked file does not exist -> ${picked.path}');
+          return;
+        }
+
+        setState(() {
+          _selectedImage = picked;
+          _selectedImageBytes = null;
+          _selectedImageName = picked.path.split('/').last;
+        });
+
+        try {
+          final size = picked.lengthSync();
+          print('Picked image: ${picked.path} (size: $size bytes)');
+        } catch (e) {
+          print('Picked image path: ${picked.path} (could not read size: $e)');
+        }
+      } else if (pickedFile.bytes != null) {
+        setState(() {
+          _selectedImage = null;
+          _selectedImageBytes = pickedFile.bytes;
+          _selectedImageName = pickedFile.name;
+        });
+        print(
+          'Picked image bytes: ${pickedFile.name} (size: ${_selectedImageBytes!.lengthInBytes} bytes)',
+        );
+      } else {
+        Get.snackbar('Error', 'Could not read selected image');
+        print('pickImage: no path and no bytes available for selected file');
         return;
-      }
-
-      setState(() {
-        _selectedImage = picked;
-      });
-
-      try {
-        final size = picked.lengthSync();
-        print('Picked image: ${picked.path} (size: $size bytes)');
-      } catch (e) {
-        print('Picked image path: ${picked.path} (could not read size: $e)');
       }
 
       Get.snackbar(
@@ -125,7 +151,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ? (widget.profile.lastName ?? '')
             : _lastNameController.text,
         'email': _emailController.text.isEmpty
-            ? (widget.profile.email ?? '')
+            ? widget.profile.email
             : _emailController.text,
         'phone_number': _phoneController.text.isEmpty
             ? (widget.profile.phoneNumber ?? '')
@@ -164,14 +190,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (_selectedImage != null) {
         final fileName = _selectedImage!.path.split('/').last;
+        final mimeType =
+            lookupMimeType(_selectedImage!.path) ?? 'application/octet-stream';
         request.files.add(
           await http.MultipartFile.fromPath(
             'profile_image',
             _selectedImage!.path,
             filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      } else if (_selectedImageBytes != null && _selectedImageName != null) {
+        final mimeType =
+            lookupMimeType(_selectedImageName!) ?? 'application/octet-stream';
+        final parts = mimeType.split('/');
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'profile_image',
+            _selectedImageBytes!,
+            filename: _selectedImageName,
+            contentType: MediaType(parts[0], parts[1]),
           ),
         );
       }
+
+      // helpful debug info
+      request.headers['Accept'] = 'application/json';
+      print(
+        'Uploading: fields=${request.fields} files=${request.files.length}',
+      );
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
@@ -197,14 +244,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (_selectedImage != null) {
         final fileName = _selectedImage!.path.split('/').last;
+        final mimeType =
+            lookupMimeType(_selectedImage!.path) ?? 'application/octet-stream';
         fallbackRequest.files.add(
           await http.MultipartFile.fromPath(
             'profile_image',
             _selectedImage!.path,
             filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      } else if (_selectedImageBytes != null && _selectedImageName != null) {
+        final mimeType =
+            lookupMimeType(_selectedImageName!) ?? 'application/octet-stream';
+        final parts = mimeType.split('/');
+        fallbackRequest.files.add(
+          http.MultipartFile.fromBytes(
+            'profile_image',
+            _selectedImageBytes!,
+            filename: _selectedImageName,
+            contentType: MediaType(parts[0], parts[1]),
           ),
         );
       }
+
+      // helpful debug info
+      fallbackRequest.headers['Accept'] = 'application/json';
+      print(
+        'Fallback upload: fields=${fallbackRequest.fields} files=${fallbackRequest.files.length}',
+      );
 
       var fallbackStream = await fallbackRequest.send();
       var fallbackResponse = await http.Response.fromStream(fallbackStream);

@@ -5,10 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/const/app_colors.dart';
 import '../../SellingAgreement/screens/AgentSellingAgreementScreen.dart';
-import '../../CMA/screens/AgentCMAScreen.dart';
+import '../controller/agent_notification_controller.dart';
+import 'agent_documents_screen.dart';
 
 class AgentNotificationScreen extends StatelessWidget {
-  const AgentNotificationScreen({super.key});
+  AgentNotificationScreen({super.key});
+
+  final AgentNotificationController controller = Get.put(
+    AgentNotificationController(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -21,242 +26,296 @@ class AgentNotificationScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Notification',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '4 unread message',
-              style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-            ),
-          ],
-        ),
-        // actions: [
-        //   Padding(
-        //     padding: const EdgeInsets.only(right: 16.0),
-        //     child: Center(
-        //       child: Container(
-        //         padding: const EdgeInsets.symmetric(
-        //           horizontal: 12,
-        //           vertical: 6,
-        //         ),
-        //         decoration: BoxDecoration(
-        //           color: const Color(0xFFE0F2F1), // Light teal bg
-        //           borderRadius: BorderRadius.circular(20),
-        //         ),
-        //         child: Text(
-        //           'Mark all read',
-        //           style: TextStyle(
-        //             fontSize: 12,
-        //             fontWeight: FontWeight.w500,
-        //             color: _textDark,
-        //           ),
-        //         ),
-        //       ),
-        //     ),
-        //   ),
-        // ],
-      ),
-
-      body: ListView(
-        padding: EdgeInsets.all(16.w),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+        title: Obx(
+          () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10.0),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2F1), // Light teal bg
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text(
-                    'Mark all read',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w500,
-                      color: primaryColor,
-                    ),
-                  ),
+              Text(
+                'Notification',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              Text(
+                '${controller.unreadCount.value} unread message${controller.unreadCount.value != 1 ? 's' : ''}',
+                style: TextStyle(color: Colors.grey, fontSize: 12.sp),
               ),
             ],
           ),
-          _buildNotificationCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(
-                  Icons.description_outlined,
-                  'Cody request for CMA',
-                  'Seller is requesting you for CMA of of their property',
-                  '5 hours ago',
-                  isUnread: true,
-                ),
-                SizedBox(height: 16.h),
-                _buildFullWidthButton(
-                  'Give CMA',
-                  primaryColor,
-                  onPressed: () {
-                    Get.to(() => const AgentCMAScreen());
-                  },
-                ),
-              ],
-            ),
-          ),
+        ),
+      ),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.notifications.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // 2. Showing Schedule
-          _buildNotificationCard(
+        if (controller.errorMessage.isNotEmpty &&
+            controller.notifications.isEmpty) {
+          return Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildHeader(
-                  Icons.calendar_today_outlined,
-                  'Showing Schedule',
-                  'Your property showing schedule has been set by the buyer',
-                  '2 hours ago',
-                  isUnread: true,
-                ),
-                SizedBox(height: 16.h),
-                _buildPropertyCard(
-                  imageUrl:
-                      'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?fit=crop&w=800&q=80',
-                  title: 'Modern Family Home',
-                  address: '123 Maple Street, Springfield',
-                  dateTime: 'Nov 12, 2024 • 10:00 AM',
-                  userName: 'Darly 12',
-                  userTime: '4hours',
-                ),
-                SizedBox(height: 16.h),
-                _buildDualActionButtons(onAccept: () {}, onDecline: () {}),
-              ],
-            ),
-          ),
-
-          // 3. Showing Scheduled
-          _buildNotificationCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(
-                  Icons.calendar_today_outlined,
-                  'Showing Scheduled',
-                  'your property showing has scheduled successfully',
-                  '1 day ago',
-                ),
-                SizedBox(height: 16.h),
-                _buildPropertyCard(
-                  imageUrl:
-                      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?fit=crop&w=800&q=80',
-                  title: 'Luxury Downtown Condo',
-                  address: '321 Main Avenue, Downtown',
-                  dateTime: 'Nov 13, 2024 • 10:00 AM',
-                  userName: 'Cody Luber',
-                  userTime: '4hours',
-                ),
-              ],
-            ),
-          ),
-
-          // 4. Property Selling Request
-          _buildNotificationCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(
-                  Icons.home_outlined,
-                  'Property Selling Request',
-                  '',
-                  '',
-                  isUnread: true,
-                ),
-                SizedBox(height: 12.h),
-                _buildTextDetail('Esther Howard'),
-                SizedBox(height: 4.h),
-                _buildTextDetail('Modern Family Home', isBold: true),
-                SizedBox(height: 12.h),
+                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
                 Text(
-                  'I am relocating to another city for work and want to sell the property soon.',
-                  style: GoogleFonts.lora(
-                    fontSize: 12.sp,
-                    color: Colors.grey[700],
-                    height: 1.4,
+                  'Failed to load notifications',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
                 ),
-                SizedBox(height: 12.h),
-                _buildTextDetail('Time: 11 Nov, 2025 - 15 Dec, 2025'),
-                _buildTextDetail('Location: 123 Main Street, Springfield'),
-                SizedBox(height: 12.h),
-                _buildTextDetail('Asking Price: \$450,000', isBold: true),
-                _buildTextDetail('Seller: Cody'),
-                SizedBox(height: 16.h),
-                _buildDualActionButtons(
-                  onAccept: () {},
-                  onDecline: () {},
-                  acceptLabel: 'Approve',
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => controller.fetchNotifications(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
-          ),
+          );
+        }
 
-          // 5. Cody accept the CMA
-          _buildNotificationCard(
+        if (controller.notifications.isEmpty) {
+          return Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildHeader(
-                  Icons.description_outlined,
-                  'Cody accept the CMA',
-                  'Cody accept the CMA. Go for the next step',
-                  '5 hours ago',
+                Icon(
+                  Icons.notifications_none,
+                  size: 64,
+                  color: Colors.grey[400],
                 ),
-                SizedBox(height: 16.h),
-                _buildFullWidthButton(
-                  'Send Agreement',
-                  primaryColor,
-                  onPressed: () {
-                    Get.to(() => const AgentSellingAgreementScreen());
-                  },
+                const SizedBox(height: 16),
+                Text(
+                  'No notifications yet',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
-          ),
+          );
+        }
 
-          // 6. Cody accepted the selling agreement
-          _buildNotificationCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(
-                  Icons.description_outlined,
-                  'Cody accepted the selling agreement',
-                  'Cody accept the selling agreement. Go for the next step',
-                  '5 hours ago',
-                ),
-                SizedBox(height: 16.h),
-                _buildFullWidthButton(
-                  'Chat with Seller',
-                  primaryColor,
-                  onPressed: () {},
-                ),
-              ],
-            ),
+        return RefreshIndicator(
+          onRefresh: () => controller.fetchNotifications(),
+          child: ListView(
+            padding: EdgeInsets.all(16.w),
+            children: [
+              Obx(
+                () => controller.unreadCount.value > 0
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: InkWell(
+                              onTap: () => controller.markAllAsRead(),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12.w,
+                                  vertical: 6.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE0F2F1),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                ),
+                                child: Text(
+                                  'Mark all read',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              ...controller.notifications.map((notification) {
+                return _buildNotificationFromData(notification);
+              }).toList(),
+            ],
           ),
-        ],
-      ),
+        );
+      }),
     );
+  }
+
+  Widget _buildNotificationFromData(notification) {
+    // Determine icon based on notification type
+    IconData icon = Icons.notifications_outlined;
+    switch (notification.notificationType) {
+      case 'new_selling_request':
+        icon = Icons.home_outlined;
+        break;
+      case 'document_uploaded':
+      case 'document_updated':
+        icon = Icons.description_outlined;
+        break;
+      case 'cma_ready':
+        icon = Icons.description_outlined;
+        break;
+      case 'showing_scheduled':
+        icon = Icons.calendar_today_outlined;
+        break;
+    }
+
+    Widget content;
+
+    // Build content based on notification type
+    switch (notification.notificationType) {
+      case 'new_selling_request':
+        if (notification.sellingRequestId != null) {
+          content = Obx(() {
+            final detail =
+                controller.sellingRequestDetails[notification.sellingRequestId];
+            if (detail == null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(
+                    icon,
+                    notification.title,
+                    notification.message,
+                    notification.relativeTime,
+                    isUnread: !notification.isRead,
+                  ),
+                  SizedBox(height: 16.h),
+                  const Center(child: CircularProgressIndicator()),
+                ],
+              );
+            }
+            return _buildPropertyRequestCard(notification, detail);
+          });
+        } else {
+          content = _buildHeader(
+            icon,
+            notification.title,
+            notification.message,
+            notification.relativeTime,
+            isUnread: !notification.isRead,
+          );
+        }
+        break;
+
+      case 'cma_ready':
+        content = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(
+              icon,
+              notification.title,
+              notification.message,
+              notification.relativeTime,
+              isUnread: !notification.isRead,
+            ),
+            SizedBox(height: 16.h),
+            _buildFullWidthButton(
+              'Send Agreement',
+              primaryColor,
+              onPressed: () {
+                controller.markAsRead(notification.id);
+                if (notification.documentId != null) {
+                  Get.to(
+                    () => AgentSellingAgreementScreen(
+                      propertyDocumentId: notification.documentId!,
+                    ),
+                  );
+                } else {
+                  Get.snackbar('Error', 'Property document id not available');
+                }
+              },
+            ),
+          ],
+        );
+        break;
+
+      case 'document_updated':
+        content = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(
+              icon,
+              notification.title,
+              notification.message,
+              notification.relativeTime,
+              isUnread: !notification.isRead,
+            ),
+            SizedBox(height: 16.h),
+            _buildFullWidthButton(
+              'Chat with Seller',
+              primaryColor,
+              onPressed: () {
+                controller.markAsRead(notification.id);
+                Get.snackbar('Chat', 'Opening chat with seller...');
+              },
+            ),
+          ],
+        );
+        break;
+
+      case 'document_uploaded':
+        content = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(
+              icon,
+              notification.title,
+              notification.message,
+              notification.relativeTime,
+              isUnread: !notification.isRead,
+            ),
+            SizedBox(height: 16.h),
+            _buildFullWidthButton(
+              notification.actionText ?? 'View Document',
+              primaryColor,
+              onPressed: () {
+                controller.markAsRead(notification.id);
+                // If action is "View Documents", open the documents viewer; otherwise just show message
+                final action = (notification.actionText ?? '').toLowerCase();
+                if (action.contains('view') &&
+                    notification.sellingRequestId != null) {
+                  Get.to(
+                    () => AgentDocumentsScreen(
+                      sellingRequestId: notification.sellingRequestId!,
+                    ),
+                  );
+                } else if (notification.documentId != null) {
+                  // Open document detail or show message
+                  Get.snackbar(
+                    'Document',
+                    'Open document id=${notification.documentId}',
+                  );
+                } else {
+                  Get.snackbar('Document', 'Opening document...');
+                }
+              },
+            ),
+          ],
+        );
+        break;
+
+      default:
+        content = _buildHeader(
+          icon,
+          notification.title,
+          notification.message,
+          notification.relativeTime,
+          isUnread: !notification.isRead,
+        );
+    }
+
+    return _buildNotificationCard(child: content);
   }
 
   Widget _buildNotificationCard({required Widget child}) {
@@ -350,113 +409,177 @@ class AgentNotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPropertyCard({
-    required String imageUrl,
-    required String title,
-    required String address,
-    required String dateTime,
-    required String userName,
-    required String userTime,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.r),
-            child: Image.network(
-              imageUrl,
-              height: 120.h,
-              width: double.infinity,
-              fit: BoxFit.cover,
+  Widget _buildPropertyRequestCard(notification, detail) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Property Selling Request',
+              style: GoogleFonts.lora(fontSize: 14.sp, color: primaryText),
             ),
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            title,
-            style: GoogleFonts.lora(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: primaryText,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 14.sp,
-                color: Colors.grey[600],
-              ),
-              SizedBox(width: 4.w),
-              Expanded(
-                child: Text(
-                  address,
-                  style: GoogleFonts.lora(
-                    fontSize: 11.sp,
-                    color: Colors.grey[600],
-                  ),
+            if (!notification.isRead)
+              Container(
+                width: 8.w,
+                height: 8.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE67E22), // Orange dot
+                  shape: BoxShape.circle,
                 ),
               ),
-            ],
+          ],
+        ),
+        SizedBox(height: 12.h),
+        Text(
+          detail.sellerName,
+          style: GoogleFonts.lora(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2E5C55), // Greenish text
           ),
-          SizedBox(height: 4.h),
-          Row(
-            children: [
-              Icon(Icons.access_time, size: 14.sp, color: Colors.grey[600]),
-              SizedBox(width: 4.w),
-              Text(
-                dateTime,
-                style: GoogleFonts.lora(
-                  fontSize: 11.sp,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
+        ),
+        Text(
+          notification.propertyTitle ?? 'Modern Family Home',
+          style: GoogleFonts.lora(
+            fontSize: 14.sp,
+            color: primaryText,
+            fontWeight: FontWeight.w500,
           ),
-          SizedBox(height: 12.h),
-          Row(
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          detail.sellingReason,
+          style: GoogleFonts.lora(
+            fontSize: 13.sp,
+            color: Colors.grey[700],
+            height: 1.4,
+          ),
+        ),
+        SizedBox(height: 12.h),
+        _buildDetailRow('Time', '${detail.startDate} - ${detail.endDate}'),
+        _buildDetailRow('Email', detail.sellerEmail),
+        _buildDetailRow('Phone Number', detail.sellerPhone ?? 'N/A'),
+        SizedBox(height: 12.h),
+        RichText(
+          text: TextSpan(
             children: [
-              CircleAvatar(
-                radius: 12.r,
-                backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, size: 14.sp, color: Colors.grey[600]),
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                userName,
+              TextSpan(
+                text: 'Asking Price: ',
                 style: GoogleFonts.lora(
-                  fontSize: 12.sp,
+                  fontSize: 16.sp,
+                  color: const Color(0xFF2E5C55),
                   fontWeight: FontWeight.w500,
-                  color: primaryText,
                 ),
               ),
-              Text(
-                ' • $userTime',
+              TextSpan(
+                text: '\$${detail.askingPrice}',
                 style: GoogleFonts.lora(
-                  fontSize: 11.sp,
-                  color: Colors.grey[600],
+                  fontSize: 16.sp,
+                  color: const Color(0xFF2E5C55),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          'Seller: ${detail.sellerName.split(' ').first}',
+          style: GoogleFonts.lora(fontSize: 14.sp, color: Colors.grey[600]),
+        ),
+        SizedBox(height: 16.h),
+        // Show spinner while updating; show buttons only when pending; otherwise show status label
+        if (notification.sellingRequestId != null &&
+            controller.updatingRequests[notification.sellingRequestId!] ==
+                true) ...[
+          Center(
+            child: SizedBox(
+              height: 24.h,
+              width: 24.h,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ] else if ((notification.sellingRequestStatus ??
+                    detail.status ??
+                    'pending')
+                .toLowerCase() ==
+            'pending') ...[
+          _buildDualActionButtons(
+            onAccept: () {
+              controller.markAsRead(notification.id);
+              controller.updateSellingRequestStatus(
+                sellingRequestId: notification.sellingRequestId!,
+                status: 'accepted',
+              );
+            },
+            onDecline: () {
+              controller.markAsRead(notification.id);
+              controller.updateSellingRequestStatus(
+                sellingRequestId: notification.sellingRequestId!,
+                status: 'rejected',
+              );
+            },
+            acceptLabel: 'Approve',
+          ),
+        ] else ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color:
+                    (notification.sellingRequestStatus ??
+                                detail.status ??
+                                'pending')
+                            .toLowerCase() ==
+                        'accepted'
+                    ? const Color(0xFFE8F5E9)
+                    : const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Text(
+                ((notification.sellingRequestStatus ?? detail.status) ?? '')
+                    .toString()
+                    .toUpperCase(),
+                style: GoogleFonts.lora(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color:
+                      (notification.sellingRequestStatus ??
+                                  detail.status ??
+                                  'pending')
+                              .toLowerCase() ==
+                          'accepted'
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFFD32F2F),
+                ),
+              ),
+            ),
           ),
         ],
-      ),
+      ],
     );
   }
 
-  Widget _buildTextDetail(String text, {bool isBold = false}) {
-    return Text(
-      text,
-      style: GoogleFonts.lora(
-        fontSize: 12.sp,
-        fontWeight: isBold ? FontWeight.w600 : FontWeight.w400,
-        color: primaryText,
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: GoogleFonts.lora(fontSize: 13.sp, color: Colors.grey[600]),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.lora(fontSize: 13.sp, color: Colors.grey[600]),
+            ),
+          ),
+        ],
       ),
     );
   }

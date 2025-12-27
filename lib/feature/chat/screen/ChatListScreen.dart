@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-
+import 'package:intl/intl.dart';
+import 'package:pine_rever_realty/feature/chat/controller/chat_list_controller.dart';
+import 'package:pine_rever_realty/core/models/conversation_model.dart';
 import 'ChatDetailScreen.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
+
+  @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  late ChatListController controller;
 
   // Colors
   static const Color _textDark = Color(0xFF212121);
@@ -13,16 +22,43 @@ class ChatListScreen extends StatelessWidget {
   static const Color _badgeColor = Color(0xFF0E4A3B); // Dark Green
 
   @override
+  void initState() {
+    super.initState();
+    controller = Get.put(ChatListController());
+    // Fetch data every time the screen is opened
+    controller.fetchConversations();
+  }
+
+  String _formatTime(String? timestamp) {
+    if (timestamp == null) return '';
+    try {
+      final dateTime = DateTime.parse(timestamp).toLocal();
+      final now = DateTime.now();
+      if (dateTime.year == now.year &&
+          dateTime.month == now.month &&
+          dateTime.day == now.day) {
+        return DateFormat('h:mm a').format(dateTime);
+      } else if (dateTime.year == now.year &&
+          dateTime.month == now.month &&
+          dateTime.day == now.day - 1) {
+        return 'Yesterday';
+      } else {
+        return DateFormat('MMM d').format(dateTime);
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print('ChatListScreen: build called');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black, size: 24.sp),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+
         title: Text(
           'Chats',
           style: TextStyle(
@@ -36,38 +72,68 @@ class ChatListScreen extends StatelessWidget {
           child: Container(color: Colors.grey[200], height: 1.0.h),
         ),
       ),
-      body: ListView(
-        padding: EdgeInsets.symmetric(vertical: 16.h),
-        children: [
-          // Chat Item 1: Sarah Johnson
-          _buildChatItem(
-            context: context,
-            name: 'Sarah Johnson',
-            message: 'The showing is confirmed for',
-            time: '10:30 AM',
-            image:
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fit=crop&w=100&q=80',
-            unreadCount: 2,
-            onTap: () {
-              Get.to(ChatDetailScreen());
-            },
-          ),
+      body: Obx(() {
+        print(
+          'ChatListScreen: Obx rebuild, isLoading=${controller.isLoading.value}, conversations=${controller.conversations.length}',
+        );
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Chat Item 2: Michael Chen
-          _buildChatItem(
-            context: context,
-            name: 'Michael Chen',
-            message: 'I have some great listings that match',
-            time: 'Yesterday',
-            image:
-                'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=100&q=80', // Using placeholder for demo
-            unreadCount: 0,
-            onTap: () {
-              Get.to(ChatDetailScreen());
-            },
-          ),
-        ],
-      ),
+        if (controller.conversations.isEmpty) {
+          return Center(
+            child: Text(
+              'No conversations yet',
+              style: TextStyle(fontSize: 16.sp, color: _textGrey),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          itemCount: controller.conversations.length,
+          itemBuilder: (context, index) {
+            final Conversation conversation = controller.conversations[index];
+            final otherUser = conversation.otherUser;
+            final lastMessage = conversation.lastMessage;
+
+            // UI Logic: use other user image and name
+            final String name =
+                otherUser?.name ?? otherUser?.username ?? 'Unknown';
+            final String imageUrl = otherUser?.profileImageUrl ?? '';
+            final String messageContent = lastMessage?.content ?? '';
+            final String time = _formatTime(conversation.lastMessageAt);
+            final int unread = conversation.unreadCount ?? 0;
+
+            print(
+              'ChatListScreen: building item $index, name=$name, message=$messageContent, unread=$unread',
+            );
+
+            return _buildChatItem(
+              context: context,
+              name: name,
+              message: messageContent,
+              time: time,
+              image: imageUrl,
+              unreadCount: unread,
+              onTap: () {
+                // Pass necessary data if ChatDetailScreen needs it, or just navigate for now
+                print(
+                  'ChatListScreen: onTap for conversation ${conversation.id}, name=$name',
+                );
+                Get.to(
+                  () => ChatDetailScreen(
+                    conversationId: conversation.id!,
+                    otherUserName: name,
+                    otherUserImage: imageUrl,
+                    otherUserStatus: 'Active', // Or dynamic if available
+                  ),
+                );
+              },
+            );
+          },
+        );
+      }),
     );
   }
 
@@ -102,7 +168,14 @@ class ChatListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar
-              CircleAvatar(radius: 28.r, backgroundImage: NetworkImage(image)),
+              CircleAvatar(
+                radius: 28.r,
+                backgroundImage: image.isNotEmpty ? NetworkImage(image) : null,
+                backgroundColor: Colors.grey[200],
+                child: image.isEmpty
+                    ? Icon(Icons.person, color: Colors.grey[400])
+                    : null,
+              ),
               SizedBox(width: 16.w),
 
               // Content

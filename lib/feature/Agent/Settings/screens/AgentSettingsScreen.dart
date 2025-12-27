@@ -8,14 +8,70 @@ import 'package:pine_rever_realty/feature/Buyers/setting/DeleteAccount/screens/D
 import 'package:pine_rever_realty/feature/Buyers/setting/PrivacySecurity/screen/PrivacySecurityScreen.dart';
 import 'package:pine_rever_realty/feature/Buyers/setting/TermsConditions/Screen/TermsConditionsScreen.dart';
 import 'package:pine_rever_realty/core/services_class/auth_service.dart';
+import 'package:pine_rever_realty/core/services_class/profile_service.dart';
 import 'AgentProfileScreen.dart';
+import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
 import 'ScheduleListScreen.dart';
 import 'PropertyListScreen.dart';
 import 'ChangePasswordScreen.dart';
-import '../../../Buyers/setting/buyerAgreementScreen.dart';
 
-class AgentSettingsScreen extends StatelessWidget {
+class AgentSettingsScreen extends StatefulWidget {
   const AgentSettingsScreen({super.key});
+
+  @override
+  State<AgentSettingsScreen> createState() => _AgentSettingsScreenState();
+}
+
+class _AgentSettingsScreenState extends State<AgentSettingsScreen> {
+  UserModel? _user;
+  String _name = '...';
+  String? _profileUrl;
+  String _memberSince = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() => _isLoading = true);
+    final user = await ProfileService.fetchAgentProfile();
+    if (user != null) {
+      setState(() {
+        _user = user;
+        _name = user.fullName.isNotEmpty ? user.fullName : user.username;
+        _profileUrl = user.profilePicture;
+        try {
+          final created = DateTime.parse(user.createdAt);
+          _memberSince =
+              'Member since ${_monthName(created.month)} ${created.year}';
+        } catch (_) {
+          _memberSince = '';
+        }
+      });
+    }
+    setState(() => _isLoading = false);
+  }
+
+  String _monthName(int m) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[m - 1];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,18 +108,35 @@ class AgentSettingsScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 30.r,
-                    backgroundColor: primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.person, size: 35.sp, color: primaryColor),
-                  ),
+                  _isLoading
+                      ? SizedBox(
+                          width: 60.r,
+                          height: 60.r,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : CircleAvatar(
+                          radius: 30.r,
+                          backgroundColor: primaryColor.withOpacity(0.1),
+                          backgroundImage: _profileUrl != null
+                              ? NetworkImage(_profileUrl!) as ImageProvider
+                              : null,
+                          child: _profileUrl == null
+                              ? Icon(
+                                  Icons.person,
+                                  size: 35.sp,
+                                  color: primaryColor,
+                                )
+                              : null,
+                        ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sarah Johnson',
+                          _isLoading ? 'Loading...' : _name,
                           style: GoogleFonts.lora(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w600,
@@ -72,7 +145,7 @@ class AgentSettingsScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          'Member since Sep 2025',
+                          _isLoading ? '' : _memberSince,
                           style: GoogleFonts.lora(
                             fontSize: 13.sp,
                             color: Colors.grey[600],
@@ -83,11 +156,16 @@ class AgentSettingsScreen extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const AgentProfileScreen(),
-                        ),
-                      );
+                      Navigator.of(context)
+                          .push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AgentProfileScreen(user: _user),
+                            ),
+                          )
+                          .then((v) {
+                            if (v == true) _loadProfile();
+                          });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
@@ -111,6 +189,7 @@ class AgentSettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+
             SizedBox(height: 24.h),
 
             // Settings Section

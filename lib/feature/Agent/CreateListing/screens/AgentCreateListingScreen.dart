@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
-import '../../bottom_nav_bar/screen/Agent_bottom_nav_bar.dart';
+import 'package:pine_rever_realty/feature/Agent/CreateListing/controller/agent_create_listing_controller.dart';
 
 class AgentCreateListingScreen extends StatefulWidget {
   const AgentCreateListingScreen({super.key});
@@ -14,63 +14,55 @@ class AgentCreateListingScreen extends StatefulWidget {
 }
 
 class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
+  final AgentCreateListingController _controller = Get.put(
+    AgentCreateListingController(),
+  );
   int _currentStep = 0;
-
-  // Form controllers
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _zipController = TextEditingController();
-  final TextEditingController _stateController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _squareFeetController = TextEditingController();
-  String _selectedPropertyType = 'Select type';
-  String _selectedBedrooms = 'Select';
-  String _selectedBathrooms = 'Select';
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _addressController.dispose();
-    _zipController.dispose();
-    _stateController.dispose();
-    _cityController.dispose();
-    _descriptionController.dispose();
-    _priceController.dispose();
-    _squareFeetController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryColor.withOpacity(0.09),
-
       body: SafeArea(
         child: Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Text(
-                  'Create Listing',
-                  style: GoogleFonts.lora(
-                    color: Colors.black,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Get.back(),
+                        child: Icon(Icons.arrow_back, size: 24.sp),
+                      ),
+                      SizedBox(width: 12.w),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Create Listing',
+                            style: GoogleFonts.lora(
+                              color: Colors.black,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            'Step ${_currentStep + 1} of 5',
+                            style: GoogleFonts.lora(
+                              color: Colors.grey[600],
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  'Step ${_currentStep + 1} of 5',
-                  style: GoogleFonts.lora(
-                    color: Colors.grey[600],
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             _buildStepper(),
             Expanded(
@@ -202,8 +194,19 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Added Agreement ID as requested
+        _buildLabel('Agreement ID'),
+        _buildTextField(
+          _controller.agreementIdController,
+          'Enter Agreement ID',
+        ),
+        SizedBox(height: 16.h),
+
         _buildLabel('Property Title'),
-        _buildTextField(_titleController, 'Modern Downtown Apartment'),
+        _buildTextField(
+          _controller.titleController,
+          'Modern Downtown Apartment',
+        ),
         SizedBox(height: 20.h),
 
         Container(
@@ -230,7 +233,7 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
               SizedBox(height: 16.h),
 
               _buildLabel('Street Address'),
-              _buildTextField(_addressController, '123 Main Street'),
+              _buildTextField(_controller.addressController, '123 Main Street'),
               SizedBox(height: 16.h),
 
               Row(
@@ -240,7 +243,10 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildLabel('City'),
-                        _buildTextField(_cityController, 'Springfield'),
+                        _buildTextField(
+                          _controller.cityController,
+                          'Springfield',
+                        ),
                       ],
                     ),
                   ),
@@ -250,7 +256,7 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildLabel('State'),
-                        _buildTextField(_stateController, 'IL'),
+                        _buildTextField(_controller.stateController, 'IL'),
                       ],
                     ),
                   ),
@@ -259,7 +265,7 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
               SizedBox(height: 16.h),
 
               _buildLabel('ZIP Code'),
-              _buildTextField(_zipController, '62701'),
+              _buildTextField(_controller.zipController, '62701'),
               SizedBox(height: 16.h),
 
               _buildLabel('Property Type'),
@@ -305,14 +311,14 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildLabel('Bedrooms'),
-                        _buildSelectionDropdown(
-                          value: _selectedBedrooms,
-                          items: ['Select', '1', '2', '3', '4', '5+'],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedBedrooms = value!;
-                            });
-                          },
+                        Obx(
+                          () => _buildSelectionDropdown(
+                            value: _controller.selectedBedrooms.value,
+                            items: ['Select', '1', '2', '3', '4', '5+'],
+                            onChanged: (value) {
+                              _controller.selectedBedrooms.value = value!;
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -323,14 +329,14 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildLabel('Bathrooms'),
-                        _buildSelectionDropdown(
-                          value: _selectedBathrooms,
-                          items: ['Select', '1', '2', '3', '4', '5+'],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedBathrooms = value!;
-                            });
-                          },
+                        Obx(
+                          () => _buildSelectionDropdown(
+                            value: _controller.selectedBathrooms.value,
+                            items: ['Select', '1', '2', '3', '4', '5+'],
+                            onChanged: (value) {
+                              _controller.selectedBathrooms.value = value!;
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -340,12 +346,12 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
               SizedBox(height: 16.h),
 
               _buildLabel('Square Feet'),
-              _buildTextField(_squareFeetController, '2,000'),
+              _buildTextField(_controller.squareFeetController, '2,000'),
               SizedBox(height: 16.h),
 
               _buildLabel('Description'),
               _buildTextField(
-                _descriptionController,
+                _controller.descriptionController,
                 'Describe your property...',
                 maxLines: 4,
               ),
@@ -382,31 +388,34 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                   color: primaryText,
                 ),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                'Add high-quality photos to attract more buyers',
-                style: GoogleFonts.lora(
-                  fontSize: 12.sp,
-                  color: Colors.grey[600],
-                ),
-              ),
               SizedBox(height: 16.h),
 
               _buildUploadArea(
                 'Upload Photos',
                 subtitle: 'Supported formats: JPG, PNG (max 10 MB)',
                 icon: Icons.image_outlined,
+                isImage: true,
               ),
-              SizedBox(height: 16.h),
-
-              Row(
-                children: [
-                  Expanded(child: _buildSmallUploadArea(Icons.image_outlined)),
-                  SizedBox(width: 12.w),
-                  Expanded(child: _buildSmallUploadArea(Icons.image_outlined)),
-                  SizedBox(width: 12.w),
-                  Expanded(child: _buildSmallUploadArea(Icons.image_outlined)),
-                ],
+              SizedBox(height: 10.h),
+              // Display picked photos count or list
+              Obx(
+                () => _controller.pickedPhotos.isNotEmpty
+                    ? Wrap(
+                        spacing: 8,
+                        children: _controller.pickedPhotos
+                            .map(
+                              (e) => Chip(
+                                label: Text(
+                                  e.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onDeleted: () =>
+                                    _controller.removeFile(e, isImage: true),
+                              ),
+                            )
+                            .toList(),
+                      )
+                    : SizedBox(),
               ),
             ],
           ),
@@ -435,37 +444,34 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                   color: primaryText,
                 ),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                'Add property document to verify property',
-                style: GoogleFonts.lora(
-                  fontSize: 12.sp,
-                  color: Colors.grey[600],
-                ),
-              ),
               SizedBox(height: 16.h),
 
               _buildUploadArea(
                 'Upload Documents',
                 subtitle: 'Supported formats: PDF, JPG, PNG (max 10 MB)',
                 icon: Icons.attach_file,
+                isImage: false,
               ),
-              SizedBox(height: 16.h),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSmallUploadArea(Icons.description_outlined),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: _buildSmallUploadArea(Icons.description_outlined),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: _buildSmallUploadArea(Icons.description_outlined),
-                  ),
-                ],
+              SizedBox(height: 10.h),
+              // Display picked photos count or list
+              Obx(
+                () => _controller.pickedDocuments.isNotEmpty
+                    ? Wrap(
+                        spacing: 8,
+                        children: _controller.pickedDocuments
+                            .map(
+                              (e) => Chip(
+                                label: Text(
+                                  e.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onDeleted: () =>
+                                    _controller.removeFile(e, isImage: false),
+                              ),
+                            )
+                            .toList(),
+                      )
+                    : SizedBox(),
               ),
             ],
           ),
@@ -502,7 +508,7 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
               SizedBox(height: 20.h),
 
               _buildLabel('Listing Price'),
-              _buildPriceTextField(_priceController, '\$ 450,000'),
+              _buildPriceTextField(_controller.priceController, '\$ 450,000'),
             ],
           ),
         ),
@@ -527,9 +533,18 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
         // Address
         _buildReviewLabel('Address'),
         _buildReviewValue(
-          _addressController.text.isEmpty
+          _controller.addressController.text.isEmpty
               ? 'Not provided,'
-              : _addressController.text,
+              : _controller.addressController.text,
+        ),
+        SizedBox(height: 16.h),
+
+        // Agreement ID
+        _buildReviewLabel('Agreement ID'),
+        _buildReviewValue(
+          _controller.agreementIdController.text.isEmpty
+              ? 'Not provided'
+              : _controller.agreementIdController.text,
         ),
         SizedBox(height: 16.h),
 
@@ -542,10 +557,12 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildReviewLabel('Property Type'),
-                  _buildReviewValue(
-                    _selectedPropertyType == 'Select type'
-                        ? 'Not selected'
-                        : _selectedPropertyType,
+                  Obx(
+                    () => _buildReviewValue(
+                      _controller.selectedPropertyType.value == 'Select type'
+                          ? 'Not selected'
+                          : _controller.selectedPropertyType.value,
+                    ),
                   ),
                 ],
               ),
@@ -557,9 +574,9 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                 children: [
                   _buildReviewLabel('Price'),
                   _buildReviewValue(
-                    _priceController.text.isEmpty
+                    _controller.priceController.text.isEmpty
                         ? '\$0'
-                        : _priceController.text,
+                        : _controller.priceController.text,
                   ),
                 ],
               ),
@@ -576,8 +593,12 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildReviewLabel('Beds'),
-                  _buildReviewValue(
-                    _selectedBedrooms == 'Select' ? '0' : _selectedBedrooms,
+                  Obx(
+                    () => _buildReviewValue(
+                      _controller.selectedBedrooms.value == 'Select'
+                          ? '0'
+                          : _controller.selectedBedrooms.value,
+                    ),
                   ),
                 ],
               ),
@@ -588,22 +609,25 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildReviewLabel('Baths'),
-                  _buildReviewValue(
-                    _selectedBathrooms == 'Select' ? '0' : _selectedBathrooms,
+                  Obx(
+                    () => _buildReviewValue(
+                      _controller.selectedBathrooms.value == 'Select'
+                          ? '0'
+                          : _controller.selectedBathrooms.value,
+                    ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildReviewLabel('Sq Ft'),
                   _buildReviewValue(
-                    _squareFeetController.text.isEmpty
+                    _controller.squareFeetController.text.isEmpty
                         ? '0'
-                        : _squareFeetController.text,
+                        : _controller.squareFeetController.text,
                   ),
                 ],
               ),
@@ -615,9 +639,9 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
         // Description
         _buildReviewLabel('Description'),
         _buildReviewValue(
-          _descriptionController.text.isEmpty
+          _controller.descriptionController.text.isEmpty
               ? 'No description provided'
-              : _descriptionController.text,
+              : _controller.descriptionController.text,
         ),
         SizedBox(height: 24.h),
 
@@ -628,41 +652,56 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
             color: primaryColor,
             borderRadius: BorderRadius.circular(12.r),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+          child: InkWell(
+            onTap: () {
+              _controller.submitListing();
+            },
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Obx(
+                    () => _controller.isLoading.value
+                        ? SizedBox(
+                            width: 28.sp,
+                            height: 28.sp,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(Icons.check, color: Colors.white, size: 28.sp),
+                  ),
                 ),
-                child: Icon(Icons.check, color: Colors.white, size: 28.sp),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ready to Publish?',
-                      style: GoogleFonts.lora(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Publish Listing',
+                        style: GoogleFonts.lora(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      'Your listing will be visible to thousands of potential buyers',
-                      style: GoogleFonts.lora(
-                        fontSize: 13.sp,
-                        color: Colors.white.withOpacity(0.9),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Click here to publish your listing',
+                        style: GoogleFonts.lora(
+                          fontSize: 13.sp,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -771,32 +810,32 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
         color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(8.r),
       ),
-      child: DropdownButton<String>(
-        value: _selectedPropertyType,
-        isExpanded: true,
-        underline: const SizedBox(),
-        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-        items: ['Select type', 'House', 'Apartment', 'Condo', 'Villa']
-            .map(
-              (type) => DropdownMenuItem(
-                value: type,
-                child: Text(
-                  type,
-                  style: GoogleFonts.lora(
-                    fontSize: 13.sp,
-                    color: type == 'Select type'
-                        ? Colors.grey[500]
-                        : Colors.black,
+      child: Obx(
+        () => DropdownButton<String>(
+          value: _controller.selectedPropertyType.value,
+          isExpanded: true,
+          underline: const SizedBox(),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+          items: ['Select type', 'House', 'Apartment', 'Condo', 'Villa']
+              .map(
+                (type) => DropdownMenuItem(
+                  value: type,
+                  child: Text(
+                    type,
+                    style: GoogleFonts.lora(
+                      fontSize: 13.sp,
+                      color: type == 'Select type'
+                          ? Colors.grey[500]
+                          : Colors.black,
+                    ),
                   ),
                 ),
-              ),
-            )
-            .toList(),
-        onChanged: (value) {
-          setState(() {
-            _selectedPropertyType = value!;
-          });
-        },
+              )
+              .toList(),
+          onChanged: (value) {
+            _controller.selectedPropertyType.value = value!;
+          },
+        ),
       ),
     );
   }
@@ -804,7 +843,7 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
   Widget _buildSelectionDropdown({
     required String value,
     required List<String> items,
-    required Function(String?) onChanged,
+    required ValueChanged<String?> onChanged,
   }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
@@ -836,242 +875,110 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
     );
   }
 
-  Widget _buildUploadArea(String label, {String? subtitle, IconData? icon}) {
-    return Container(
-      padding: EdgeInsets.all(24.w),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE0F2F1),
-              borderRadius: BorderRadius.circular(8.r),
+  Widget _buildUploadArea(
+    String title, {
+    required String subtitle,
+    required IconData icon,
+    required bool isImage,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        _controller.pickFiles(isImage: isImage);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Colors.grey[300]!, style: BorderStyle.none),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 40.sp, color: Colors.grey[400]),
+            SizedBox(height: 12.h),
+            Text(
+              title,
+              style: GoogleFonts.lora(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: primaryColor,
+              ),
             ),
-            child: Icon(
-              icon ?? Icons.upload_file,
-              color: primaryColor,
-              size: 32.sp,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            label,
-            style: GoogleFonts.lora(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: primaryText,
-            ),
-          ),
-          if (subtitle != null) ...[
             SizedBox(height: 4.h),
             Text(
               subtitle,
-              style: GoogleFonts.lora(fontSize: 11.sp, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
+              style: GoogleFonts.lora(fontSize: 12.sp, color: Colors.grey[500]),
             ),
           ],
-          SizedBox(height: 12.h),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-            ),
-            child: Text(
-              'Choose Files',
-              style: GoogleFonts.lora(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmallUploadArea(IconData icon) {
-    return Container(
-      height: 80.h,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Center(
-        child: Icon(icon, color: Colors.grey[400], size: 24.sp),
+        ),
       ),
     );
   }
 
   Widget _buildNavigationButtons() {
-    return Container(
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: EdgeInsets.only(top: 24.h),
       child: Row(
         children: [
           if (_currentStep > 0)
             Expanded(
-              child: OutlinedButton(
-                onPressed: () {
+              child: GestureDetector(
+                onTap: () {
                   setState(() {
                     _currentStep--;
                   });
                 },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: primaryText,
-                  side: BorderSide(color: Colors.grey[400]!),
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: primaryColor),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                ),
-                child: Text(
-                  'Previous',
-                  style: GoogleFonts.lora(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w500,
+                  child: Center(
+                    child: Text(
+                      'Previous',
+                      style: GoogleFonts.lora(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           if (_currentStep > 0) SizedBox(width: 16.w),
-          Expanded(
-            flex: _currentStep == 0 ? 1 : 1,
-            child: ElevatedButton(
-              onPressed: () {
-                if (_currentStep == 2) {
-                  // Show success dialog after step 3
-                  _showSuccessDialog();
-                } else if (_currentStep == 4) {
-                  // Final step - create listing
-                  _showSuccessDialog(isFinal: true);
-                } else {
+          if (_currentStep < 4)
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
                   setState(() {
                     _currentStep++;
                   });
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _currentStep == 4 ? 'Create' : 'Next',
-                    style: GoogleFonts.lora(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  if (_currentStep < 4) SizedBox(width: 8.w),
-                  if (_currentStep < 4) Icon(Icons.arrow_forward, size: 18.sp),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog({bool isFinal = false}) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(32.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/image/prevarify.jpg',
-                  height: 200.h,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.check_circle,
-                      color: const Color(0xFF2D6A5F),
-                      size: 100.sp,
-                    );
-                  },
-                ),
-                SizedBox(height: 24.h),
-                Text(
-                  'Uploaded Successfully!',
-                  style: GoogleFonts.lora(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: primaryText,
-                  ),
-                ),
-                SizedBox(height: 32.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (isFinal) {
-                        Get.offAll(() => const AgentBottomNavbar());
-                      } else {
-                        Navigator.of(context).pop();
-                        setState(() {
-                          _currentStep++;
-                        });
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B4D3E),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.r),
-                      ),
-                      elevation: 0,
-                    ),
+                  child: Center(
                     child: Text(
-                      isFinal ? 'Return to Home' : 'Continue',
+                      'Next Step',
                       style: GoogleFonts.lora(
                         fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
