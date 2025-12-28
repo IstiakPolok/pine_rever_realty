@@ -186,14 +186,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: _textDark,
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: _textDark,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            maxLines: 1,
                           ),
                         ),
+                        SizedBox(width: 8.w),
                         Text(
                           time,
                           style: TextStyle(

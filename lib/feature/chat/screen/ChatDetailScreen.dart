@@ -90,22 +90,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   : null,
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.otherUserName,
-                  style: TextStyle(
-                    color: primaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.otherUserName,
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  widget.otherUserStatus,
-                  style: const TextStyle(color: Colors.green, fontSize: 12),
-                ),
-              ],
+                  Text(
+                    widget.otherUserStatus,
+                    style: const TextStyle(color: Colors.green, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

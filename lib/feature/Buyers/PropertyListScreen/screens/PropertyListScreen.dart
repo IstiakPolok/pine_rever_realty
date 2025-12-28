@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
+import '../../../../core/services_class/agent_listing_service.dart';
 import '../../PropertyDetailsScreen /screens/PropertyDetailsScreen.dart';
 
 class PropertyListScreen extends StatefulWidget {
@@ -14,44 +14,169 @@ class PropertyListScreen extends StatefulWidget {
 
 class _PropertyListScreenState extends State<PropertyListScreen> {
   // Combined Data for the List View
-  final List<Map<String, dynamic>> _allProperties = [
-    {
-      "title": "Modern Family Home",
-      "address": "123 Oak Street, Springfield",
-      "price": "\$849,000",
-      "beds": 4,
-      "baths": 3,
-      "sqft": "2,800",
-      "agent": "Sarah Johnson",
-      "image":
-          "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80",
-      "isFavorite": false,
-    },
-    {
-      "title": "Luxury Downtown Condo",
-      "address": "456 Main Avenue, Downtown",
-      "price": "\$225,000",
-      "beds": 4,
-      "baths": 3,
-      "sqft": "1,500",
-      "agent": "Sarah Johnson",
-      "image":
-          "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=800&q=80",
-      "isFavorite": true,
-    },
-    {
-      "title": "Charming Suburban House",
-      "address": "789 Maple Drive, Westside",
-      "price": "\$675,000",
-      "beds": 3,
-      "baths": 2,
-      "sqft": "2,200",
-      "agent": "Michael Chen",
-      "image":
-          "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80",
-      "isFavorite": false,
-    },
-  ];
+  List<Map<String, dynamic>> _allProperties = [];
+  bool _isPropertiesLoading = true;
+
+  // Pagination
+  int _currentPage = 1;
+  int _totalPages = 1;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+
+  // Filter controllers/state
+  final TextEditingController _minPriceController = TextEditingController();
+  final TextEditingController _maxPriceController = TextEditingController();
+  String _selectedBedroomsFilter = 'Any';
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _zipController = TextEditingController();
+
+  // Last applied filters for paging
+  int? _lastMinPrice;
+  int? _lastMaxPrice;
+  int? _lastBedrooms;
+  String? _lastCity;
+  String? _lastState;
+  String? _lastZip;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProperties();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200 &&
+          !_isLoadingMore &&
+          _currentPage < _totalPages) {
+        _loadMore();
+      }
+    });
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || _currentPage >= _totalPages) return;
+    setState(() {
+      _isLoadingMore = true;
+    });
+    final nextPage = _currentPage + 1;
+    print('Loading more properties: nextPage=$nextPage');
+    final resp = await AgentListingService.fetchAgentListings(
+      page: nextPage,
+      perPage: 20,
+      minPrice: _lastMinPrice,
+      maxPrice: _lastMaxPrice,
+      bedrooms: _lastBedrooms,
+      city: _lastCity,
+      state: _lastState,
+      zipCode: _lastZip,
+    );
+    if (resp != null) {
+      final more = resp.results
+          .map(
+            (e) => {
+              'id': e.id,
+              'agent_id': e.agentId,
+              'title': e.title.isNotEmpty ? e.title : 'No title',
+              'address': e.address,
+              'price': '\$${e.price.toString()}',
+              'beds': e.bedrooms,
+              'baths': e.bathrooms,
+              'sqft': e.squareFeet.toString(),
+              'agent': e.agentName,
+              'image':
+                  e.photoUrl ??
+                  'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80',
+              'isFavorite': false,
+            },
+          )
+          .toList();
+      setState(() {
+        _allProperties.addAll(more);
+        _currentPage = resp.page;
+        _totalPages = resp.totalPages;
+      });
+    }
+    setState(() {
+      _isLoadingMore = false;
+    });
+  }
+
+  Future<void> _loadProperties({
+    int? minPrice,
+    int? maxPrice,
+    int? bedrooms,
+    String? city,
+    String? state,
+    String? zipCode,
+    int page = 1,
+  }) async {
+    if (page == 1) {
+      setState(() {
+        _isPropertiesLoading = true;
+      });
+    }
+
+    // Save last applied filters so loadMore can reuse them
+    _lastMinPrice = minPrice;
+    _lastMaxPrice = maxPrice;
+    _lastBedrooms = bedrooms;
+    _lastCity = city;
+    _lastState = state;
+    _lastZip = zipCode;
+
+    final resp = await AgentListingService.fetchAgentListings(
+      page: page,
+      perPage: 20,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      bedrooms: bedrooms,
+      city: city,
+      state: state,
+      zipCode: zipCode,
+    );
+
+    if (resp != null) {
+      final mapped = resp.results
+          .map(
+            (e) => {
+              'id': e.id,
+              'agent_id': e.agentId,
+              'title': e.title.isNotEmpty ? e.title : 'No title',
+              'address': e.address,
+              'price': '\$${e.price.toString()}',
+              'beds': e.bedrooms,
+              'baths': e.bathrooms,
+              'sqft': e.squareFeet.toString(),
+              'agent': e.agentName,
+              'image':
+                  e.photoUrl ??
+                  'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80',
+              'isFavorite': false,
+            },
+          )
+          .toList();
+
+      setState(() {
+        if (page == 1) {
+          _allProperties = mapped;
+        } else {
+          _allProperties.addAll(mapped);
+        }
+        _currentPage = resp.page;
+        _totalPages = resp.totalPages;
+      });
+
+      print(
+        'Loaded ${mapped.length} properties (page ${resp.page}/${resp.totalPages}). Total now: ${_allProperties.length}',
+      );
+    }
+
+    if (page == 1) {
+      setState(() {
+        _isPropertiesLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,21 +201,46 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
 
                   // 3. Scrollable Property List
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: _allProperties.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => PropertyDetailsScreen(),
-                              ),
-                            );
-                          },
-                          child: _buildPropertyCard(_allProperties[index]),
-                        );
-                      },
-                    ),
+                    child: _isPropertiesLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                            controller: _scrollController,
+                            itemCount:
+                                _allProperties.length +
+                                (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= _allProperties.length) {
+                                // Loading indicator item
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+
+                              return GestureDetector(
+                                onTap: () {
+                                  // Debug print when a property is tapped
+                                  final prop = _allProperties[index];
+                                  print(
+                                    'Property tapped: title=${prop["title"]}, address=${prop["address"]}, id=${prop["id"]}, agent_id=${prop["agent_id"]}',
+                                  );
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          PropertyDetailsScreen(
+                                            property: _allProperties[index],
+                                          ),
+                                    ),
+                                  );
+                                },
+                                child: _buildPropertyCard(
+                                  _allProperties[index],
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -133,24 +283,17 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
             ),
           ],
         ),
-        Stack(
+        Row(
           children: [
             IconButton(
               icon: Icon(Icons.notifications_outlined, size: 28.sp),
               onPressed: () {},
               color: primaryColor,
             ),
-            Positioned(
-              right: 12.w,
-              top: 12.h,
-              child: Container(
-                width: 8.w,
-                height: 8.h,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
+            IconButton(
+              icon: Icon(Icons.refresh, size: 28.sp),
+              onPressed: () => _loadProperties(),
+              color: primaryColor,
             ),
           ],
         ),
@@ -171,8 +314,14 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: TextField(
+              onSubmitted: (val) {
+                // Quick search by city or title
+                _loadProperties(
+                  city: val.trim().isNotEmpty ? val.trim() : null,
+                );
+              },
               decoration: InputDecoration(
-                hintText: 'Search properties',
+                hintText: 'Search properties (city or title)',
                 hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
                 prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
                 border: InputBorder.none,
@@ -245,26 +394,62 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
 
                   // Price Range
                   _buildFilterLabel('Price Range'),
-                  _buildFilterInput(hint: 'Price'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterTextField(
+                          controller: _minPriceController,
+                          hint: 'Min Price',
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _buildFilterTextField(
+                          controller: _maxPriceController,
+                          hint: 'Max Price',
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
 
                   // Minimum Bedroom
                   _buildFilterLabel('Minimum Bedroom'),
                   _buildFilterDropdown(
-                    hint: 'Any',
+                    hint: _selectedBedroomsFilter,
                     items: ['Any', '1', '2', '3', '4+'],
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedBedroomsFilter = val ?? 'Any';
+                      });
+                    },
                   ),
                   const SizedBox(height: 16),
 
                   // Location
-                  _buildFilterLabel('Location'),
-                  _buildFilterDropdown(
-                    hint: 'Your expected location',
-                    items: [
-                      'New York',
-                      'Los Angeles',
-                      'Chicago',
-                      'Springfield',
+                  _buildFilterLabel('Location (City, State, ZIP)'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterTextField(
+                          controller: _cityController,
+                          hint: 'City',
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _buildFilterTextField(
+                          controller: _stateController,
+                          hint: 'State',
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _buildFilterTextField(
+                          controller: _zipController,
+                          hint: 'ZIP',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -275,7 +460,16 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () {
-                            // Add logic to clear filters
+                            // Clear all filters
+                            _minPriceController.clear();
+                            _maxPriceController.clear();
+                            _selectedBedroomsFilter = 'Any';
+                            _cityController.clear();
+                            _stateController.clear();
+                            _zipController.clear();
+                            // Reload unfiltered
+                            _loadProperties();
+                            Navigator.of(context).pop();
                           },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -297,10 +491,42 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pop();
-                            Get.off(() => PropertyListScreen());
+                            // Apply filters
+                            final int? minPrice =
+                                _minPriceController.text.isNotEmpty
+                                ? int.tryParse(_minPriceController.text)
+                                : null;
+                            final int? maxPrice =
+                                _maxPriceController.text.isNotEmpty
+                                ? int.tryParse(_maxPriceController.text)
+                                : null;
+                            final int? bedrooms =
+                                _selectedBedroomsFilter != 'Any'
+                                ? int.tryParse(
+                                    _selectedBedroomsFilter.replaceAll('+', ''),
+                                  )
+                                : null;
+                            final city = _cityController.text.trim().isNotEmpty
+                                ? _cityController.text.trim()
+                                : null;
+                            final state =
+                                _stateController.text.trim().isNotEmpty
+                                ? _stateController.text.trim()
+                                : null;
+                            final zip = _zipController.text.trim().isNotEmpty
+                                ? _zipController.text.trim()
+                                : null;
 
-                            // Add logic to apply filters
+                            _loadProperties(
+                              minPrice: minPrice,
+                              maxPrice: maxPrice,
+                              bedrooms: bedrooms,
+                              city: city,
+                              state: state,
+                              zipCode: zip,
+                            );
+
+                            Navigator.of(context).pop();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: secondaryColor,
@@ -343,17 +569,33 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     );
   }
 
-  // Helper for Input Fields in Filter Dialog
-  Widget _buildFilterInput({required String hint}) {
+  @override
+  void dispose() {
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _zipController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Helper for Input Fields in Filter Dialog (with controller)
+  Widget _buildFilterTextField({
+    required TextEditingController controller,
+    required String hint,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFEAEAEA), // Light grey from image
         borderRadius: BorderRadius.circular(8),
       ),
       child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14.sp),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -364,10 +606,11 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     );
   }
 
-  // Helper for Dropdowns in Filter Dialog
+  // Helper for Dropdowns in Filter Dialog (with onChanged)
   Widget _buildFilterDropdown({
     required String hint,
     required List<String> items,
+    ValueChanged<String?>? onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -389,7 +632,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
               child: Text(item, style: TextStyle(color: primaryText)),
             );
           }).toList(),
-          onChanged: (val) {},
+          onChanged: onChanged,
         ),
       ),
     );

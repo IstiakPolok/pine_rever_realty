@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/const/app_colors.dart';
 import '../../../../../core/models/selling_request_response.dart';
+import '../../../../../core/models/profile_response.dart';
 import '../../../../../core/services_class/local_service/shared_preferences_helper.dart';
 
 import '../../../../core/network_caller/endpoints.dart';
@@ -24,12 +25,17 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
   List<SellingRequest> _sellingRequests = [];
   bool isLoading = true;
 
+  // Seller profile
+  ProfileResponse? _profile;
+  bool _isProfileLoading = true;
+
   static const Color _cardBg = Color(0xFFEEF6F4);
 
   @override
   void initState() {
     super.initState();
     fetchSellingRequests();
+    fetchProfile();
   }
 
   Future<void> fetchSellingRequests() async {
@@ -64,6 +70,42 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
     } catch (e) {
       setState(() {
         isLoading = false;
+      });
+      Get.snackbar('Error', 'An error occurred: $e');
+    }
+  }
+
+  Future<void> fetchProfile() async {
+    try {
+      String? token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        setState(() {
+          _isProfileLoading = false;
+        });
+        Get.snackbar('Error', 'No access token found');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(Urls.sellerProfile),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _profile = ProfileResponse.fromJson(data);
+          _isProfileLoading = false;
+        });
+      } else {
+        setState(() {
+          _isProfileLoading = false;
+        });
+        Get.snackbar('Error', 'Failed to load profile');
+      }
+    } catch (e) {
+      setState(() {
+        _isProfileLoading = false;
       });
       Get.snackbar('Error', 'An error occurred: $e');
     }
@@ -284,18 +326,34 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(
-                'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=',
-              ),
-            ),
+            _isProfileLoading
+                ? SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: const Center(child: CircularProgressIndicator()),
+                  )
+                : CircleAvatar(
+                    radius: 24,
+                    backgroundImage: _profile?.profileImage != null
+                        ? NetworkImage(_profile!.profileImage!)
+                        : const NetworkImage(
+                                'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=',
+                              )
+                              as ImageProvider,
+                  ),
             SizedBox(width: 12.w),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello',
+                  _isProfileLoading
+                      ? 'Hello'
+                      : (_profile != null &&
+                                ('${_profile!.firstName ?? ''} ${_profile!.lastName ?? ''}'
+                                    .trim()
+                                    .isNotEmpty)
+                            ? '${_profile!.firstName ?? ''} ${_profile!.lastName ?? ''}'
+                            : (_profile?.username ?? 'Hello')),
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
@@ -303,7 +361,7 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
                   ),
                 ),
                 Text(
-                  'Find your dream home',
+                  'Sell your property easily',
                   style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                 ),
               ],

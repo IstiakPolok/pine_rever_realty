@@ -84,10 +84,11 @@ class AgentCreateListingController extends GetxController {
       request.fields['city'] = cityController.text;
       request.fields['state'] = stateController.text;
       request.fields['zip_code'] = zipController.text;
-      request.fields['property_type'] =
-          selectedPropertyType.value == 'Select type'
+      // Pass property_type in lower-case to API (House -> house, Apartment -> apartment, etc.)
+      final propertyType = selectedPropertyType.value == 'Select type'
           ? ''
-          : selectedPropertyType.value;
+          : selectedPropertyType.value.trim().toLowerCase();
+      request.fields['property_type'] = propertyType;
       request.fields['bedrooms'] = selectedBedrooms.value == 'Select'
           ? '0'
           : selectedBedrooms.value;

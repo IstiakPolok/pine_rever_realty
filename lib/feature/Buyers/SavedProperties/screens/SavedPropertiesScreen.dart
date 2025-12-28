@@ -13,6 +13,8 @@ class SavedPropertiesScreen extends StatelessWidget {
   // Mock Data matching the image
   static final List<Map<String, dynamic>> _savedProperties = [
     {
+      "id": 1,
+      "agent_id": 1,
       "price": "\$450,000",
       "address": "123 Maple Street, Springfield, IL",
       "beds": 3,
@@ -23,6 +25,8 @@ class SavedPropertiesScreen extends StatelessWidget {
           "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?fit=crop&w=800&q=80", // Modern exterior
     },
     {
+      "id": 2,
+      "agent_id": 1,
       "price": "\$380,000",
       "address": "456 Oak Avenue, Springfield, IL",
       "beds": 4,
@@ -33,6 +37,8 @@ class SavedPropertiesScreen extends StatelessWidget {
           "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?fit=crop&w=800&q=80", // Modern exterior
     },
     {
+      "id": 3,
+      "agent_id": 1,
       "price": "\$525,000",
       "address": "789 Pine Road, Springfield, IL",
       "beds": 4,
@@ -102,7 +108,7 @@ class SavedPropertiesScreen extends StatelessWidget {
   ) {
     return InkWell(
       onTap: () {
-        Get.to(PropertyDetailsScreen());
+        Get.to(PropertyDetailsScreen(property: property));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 24),

@@ -1,12 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../core/const/app_colors.dart';
+import '../../../../core/network_caller/endpoints.dart';
+import '../../../../core/services_class/local_service/shared_preferences_helper.dart';
+import '../../../chat/screen/ChatDetailScreen.dart';
 import '../../Schedule/screens/scheduleShowingScreen.dart';
 
 class PropertyDetailsScreen extends StatefulWidget {
-  const PropertyDetailsScreen({super.key});
+  final Map<String, dynamic> property;
+  const PropertyDetailsScreen({super.key, required this.property});
 
   @override
   State<PropertyDetailsScreen> createState() => _PropertyDetailsScreenState();
@@ -15,6 +20,22 @@ class PropertyDetailsScreen extends StatefulWidget {
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
   // State to track which tab is selected: 0 for Overview, 1 for Feature
   int _selectedTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Debug prints for passed IDs
+    final id = widget.property['id'];
+    final agentId = widget.property['agent_id'];
+    print('PropertyDetailsScreen opened with id=$id, agent_id=$agentId');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar(
+        'Debug',
+        'id=$id, agent_id=$agentId',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +49,8 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
             Stack(
               children: [
                 Image.network(
-                  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80",
-
+                  widget.property['image'] ??
+                      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80",
                   height: 300,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -98,7 +119,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Modern Family Home',
+                    widget.property['title'] ?? 'Property Details',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -115,17 +136,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '123 Oak Street, Springfield',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        widget.property['address'] ?? 'Unknown address',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '\$849,000',
+                    widget.property['price'] ?? '',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -144,9 +162,18 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildStatItem(Icons.bed_outlined, '4 Beds'),
-                        _buildStatItem(Icons.bathtub_outlined, '3 Baths'),
-                        _buildStatItem(Icons.square_foot, '2,800 sqft'),
+                        _buildStatItem(
+                          Icons.bed_outlined,
+                          '${widget.property['beds'] ?? '-'} Beds',
+                        ),
+                        _buildStatItem(
+                          Icons.bathtub_outlined,
+                          '${widget.property['baths'] ?? '-'} Baths',
+                        ),
+                        _buildStatItem(
+                          Icons.square_foot,
+                          '${widget.property['sqft'] ?? '-'} sqft',
+                        ),
                       ],
                     ),
                   ),
@@ -191,7 +218,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sarah Johnson',
+                            widget.property['agent'] ?? 'Agent',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -227,6 +254,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                         child: _buildContactButton(
                           Icons.chat_bubble_outline,
                           'Chat',
+                          onPressed: _startChat,
                         ),
                       ),
                     ],
@@ -238,7 +266,14 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        Get.to(() => const ScheduleShowingScreen());
+                        final propertyId = widget.property['id'];
+                        if (propertyId != null) {
+                          Get.to(
+                            () => ScheduleShowingScreen(propertyId: propertyId),
+                          );
+                        } else {
+                          Get.snackbar('Error', 'Property ID not found');
+                        }
                       },
                       icon: const Icon(Icons.calendar_today_outlined, size: 18),
                       label: Text(
@@ -271,10 +306,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
       children: [
         Icon(icon, color: Colors.grey[600], size: 24),
         const SizedBox(height: 8),
-        Text(
-          text,
-          style: TextStyle(color: Colors.grey[600], fontSize: 14),
-        ),
+        Text(text, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
       ],
     );
   }
@@ -323,11 +355,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
       children: [
         Text(
           'Beautiful house in a prime location. This stunning property features modern amenities, spacious rooms, and excellent natural lighting throughout. Perfect for families or professionals looking for a comfortable living space.',
-          style: TextStyle(
-            color: Colors.grey[600],
-            height: 1.6,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.grey[600], height: 1.6, fontSize: 14),
         ),
         const SizedBox(height: 24),
         _buildDetailRow('Property Type', 'House'),
@@ -344,10 +372,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
-          ),
+          Text(label, style: TextStyle(fontSize: 15, color: Colors.grey[600])),
           Text(
             value,
             style: TextStyle(
@@ -405,9 +430,13 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
     );
   }
 
-  Widget _buildContactButton(IconData icon, String label) {
+  Widget _buildContactButton(
+    IconData icon,
+    String label, {
+    VoidCallback? onPressed,
+  }) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: onPressed ?? () {},
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
@@ -417,5 +446,69 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
+  }
+
+  Future<void> _startChat() async {
+    final agentId = widget.property['agent_id'];
+    if (agentId == null) {
+      Get.snackbar('Error', 'Agent ID not found');
+      return;
+    }
+
+    // Show loading
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.back(); // Close loading
+        Get.snackbar('Error', 'Authentication token not found');
+        return;
+      }
+
+      final Map<String, dynamic> payload = {'other_user_id': agentId};
+      print('Create Conversation Payload: ${jsonEncode(payload)}');
+
+      final response = await http.post(
+        Uri.parse(Urls.createConversation),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(payload),
+      );
+
+      print(
+        'Create Conversation Response: ${response.statusCode} - ${response.body}',
+      );
+      Get.back(); // Close loading
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final conversationId = data['id'];
+
+        if (conversationId != null) {
+          Get.to(
+            () => ChatDetailScreen(
+              conversationId: conversationId,
+              otherUserName: widget.property['agent'] ?? 'Agent',
+              otherUserStatus: 'Active',
+            ),
+          );
+        } else {
+          Get.snackbar('Error', 'Failed to get conversation ID');
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        Get.snackbar('Error', errorData['message'] ?? 'Failed to start chat');
+      }
+    } catch (e) {
+      Get.back(); // Close loading
+      print('Error starting chat: $e');
+      Get.snackbar('Error', 'An error occurred while starting chat');
+    }
   }
 }

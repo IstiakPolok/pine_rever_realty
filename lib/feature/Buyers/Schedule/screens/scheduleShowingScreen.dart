@@ -1,18 +1,26 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/const/app_colors.dart';
+import '../../../../core/network_caller/endpoints.dart';
+import '../../../../core/services_class/local_service/shared_preferences_helper.dart';
 import '../../BrokerageRelationship/Screens/brokerageRelationshipScreen.dart';
 
 class ScheduleShowingScreen extends StatefulWidget {
-  const ScheduleShowingScreen({super.key});
+  final int propertyId;
+  const ScheduleShowingScreen({super.key, required this.propertyId});
 
   @override
   State<ScheduleShowingScreen> createState() => _ScheduleShowingScreenState();
 }
 
 class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
-  TimeOfDay? _selectedTime;
+  final TextEditingController _notesController = TextEditingController();
+  String _preferredTime = 'morning';
+  bool _isLoading = false;
+
   String _formatDate(DateTime date) {
     return '${_monthName(date.month)} ${date.day}, ${date.year}';
   }
@@ -204,58 +212,15 @@ class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
               'Preferred Time',
               style: TextStyle(fontSize: 16, color: primaryText),
             ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: _selectedTime ?? TimeOfDay.now(),
-                  builder: (context, child) {
-                    return Theme(
-                      data: Theme.of(context).copyWith(
-                        dialogBackgroundColor: Colors.white,
-                        timePickerTheme: TimePickerThemeData(
-                          backgroundColor: Colors.white,
-                          dialBackgroundColor: primaryColor.withOpacity(0.1),
-                          dialHandColor: primaryColor,
-                          hourMinuteTextColor: secondaryColor,
-                          hourMinuteColor: secondaryColor.withOpacity(0.1),
-                          dayPeriodTextColor: primaryText,
-                          entryModeIconColor: primaryText,
-                        ),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (picked != null) {
-                  setState(() {
-                    _selectedTime = picked;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 18,
-                ),
-                decoration: BoxDecoration(
-                  color: _inputBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _selectedTime == null
-                          ? 'Select a time'
-                          : _selectedTime!.format(context),
-                      style: TextStyle(color: secondaryText),
-                    ),
-                    const Icon(Icons.access_time, color: secondaryText),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildTimeChip('morning', 'Morning'),
+                const SizedBox(width: 8),
+                _buildTimeChip('afternoon', 'Afternoon'),
+                const SizedBox(width: 8),
+                _buildTimeChip('evening', 'Evening'),
+              ],
             ),
             const SizedBox(height: 24),
 
@@ -266,6 +231,7 @@ class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
             ),
             const SizedBox(height: 8),
             TextField(
+              controller: _notesController,
               maxLines: 3,
               style: TextStyle(color: primaryText),
               decoration: InputDecoration(
@@ -286,12 +252,7 @@ class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Get.off(BrokerageRelationshipScreen());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Showing Scheduled!')),
-                  );
-                },
+                onPressed: _isLoading ? null : _scheduleShowing,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor, // Using primary Color
                   foregroundColor: Colors.white,
@@ -300,10 +261,22 @@ class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
-                  'Schedule Showing',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'Schedule Showing',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -313,6 +286,98 @@ class _ScheduleShowingScreenState extends State<ScheduleShowingScreen> {
   }
 
   // --- Helper Widgets ---
+
+  Widget _buildTimeChip(String value, String label) {
+    final isSelected = _preferredTime == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _preferredTime = value;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? primaryColor : _inputBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : secondaryText,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scheduleShowing() async {
+    if (_selectedDay == null) {
+      Get.snackbar('Error', 'Please select a date');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.snackbar('Error', 'Authentication token not found');
+        return;
+      }
+
+      final String formattedDate = _selectedDay!.toIso8601String().split(
+        'T',
+      )[0];
+
+      final Map<String, dynamic> payload = {
+        'property_listing_id': widget.propertyId,
+        'requested_date': formattedDate,
+        'preferred_time': _preferredTime,
+        'additional_notes': _notesController.text,
+      };
+
+      print('Create Showing Payload: ${jsonEncode(payload)}');
+
+      final response = await http.post(
+        Uri.parse(Urls.createShowing),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(payload),
+      );
+
+      print(
+        'Create Showing Response: ${response.statusCode} - ${response.body}',
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        Get.off(() => BrokerageRelationshipScreen());
+        Get.snackbar('Success', 'Showing Scheduled Successfully!');
+      } else {
+        final errorData = jsonDecode(response.body);
+        Get.snackbar(
+          'Error',
+          errorData['message'] ?? 'Failed to schedule showing',
+        );
+      }
+    } catch (e) {
+      print('Error scheduling showing: $e');
+      Get.snackbar('Error', 'An error occurred while scheduling');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   Widget _buildShowingCard({
     required String title,

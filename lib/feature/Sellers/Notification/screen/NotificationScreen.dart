@@ -212,6 +212,13 @@ class sallerNotificationScreen extends StatelessWidget {
         break;
     }
 
+    // Hide action buttons for specific titles
+    if (notification.title == 'CMA Report Accepted' ||
+        notification.title == 'Selling Agreement Accepted') {
+      actionWidget = null;
+      hasDualActions = false;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),

@@ -9,6 +9,8 @@ import 'package:pine_rever_realty/feature/Buyers/setting/PrivacySecurity/screen/
 import 'package:pine_rever_realty/feature/Buyers/setting/TermsConditions/Screen/TermsConditionsScreen.dart';
 import 'package:pine_rever_realty/core/services_class/auth_service.dart';
 import 'package:pine_rever_realty/core/services_class/profile_service.dart';
+import '../../../Buyers/setting/AgreementList/Screen/AgreementListScreen.dart';
+import '../../../Sellers/Sellersetting/CMAReportList/Screen/CMAReportListScreen.dart';
 import 'AgentProfileScreen.dart';
 import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
 import 'ScheduleListScreen.dart';
@@ -218,6 +220,17 @@ class _AgentSettingsScreenState extends State<AgentSettingsScreen> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => const ScheduleListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSettingsItem(
+                    icon: Icons.note_alt_outlined,
+                    title: 'Agreements List',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const AgreementListScreen(),
                         ),
                       );
                     },

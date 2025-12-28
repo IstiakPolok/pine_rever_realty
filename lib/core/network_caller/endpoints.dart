@@ -20,6 +20,17 @@ class Urls {
   static const String sellerProfileUpdate = '$baseUrl/seller/profile/update/';
   static const String sellerChangePassword =
       '$baseUrl/seller/profile/change-password/';
+
+  // Buyer profile endpoint
+  static const String buyerProfile = '$baseUrl/buyer/profile/';
+  static const String buyerProfileUpdate = '$baseUrl/buyer/profile/update/';
+
+  // Buyer showings
+  static const String createShowing = '$baseUrl/buyer/showings/create/';
+
+  // Messaging endpoints
+  static const String createConversation = '$baseUrl/messaging/conversations/';
+
   // Agent profile endpoints
   static const String agentProfileUpdate = '$baseUrl/agent/profile/update/';
   static const String agentProfile = '$baseUrl/agent/profile/';

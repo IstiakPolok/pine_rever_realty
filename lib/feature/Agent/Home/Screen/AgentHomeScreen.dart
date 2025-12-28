@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../core/const/app_colors.dart';
+import '../../../../core/services_class/profile_service.dart';
+import '../../../auth/login/model/login_response_model.dart';
 import '../../notification/screens/AgentNotificationScreen.dart';
 
 class AgentHomeScreen extends StatefulWidget {
@@ -15,6 +17,30 @@ class AgentHomeScreen extends StatefulWidget {
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
   int _selectedTab = 0; // 0: Pending, 1: Approved
+  UserModel? _user;
+  String _name = '...';
+  String? _profileUrl;
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() => _isLoading = true);
+    final user = await ProfileService.fetchAgentProfile();
+    if (user != null) {
+      setState(() {
+        _user = user;
+        _name = user.fullName.isNotEmpty ? user.fullName : user.username;
+        _profileUrl = user.profilePicture;
+      });
+    }
+    setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,23 +92,45 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fit=crop&w=100&q=80',
-              ),
-            ),
+            _isLoading
+                ? SizedBox(
+                    width: 60.r,
+                    height: 60.r,
+                    child: const Center(child: CircularProgressIndicator()),
+                  )
+                : CircleAvatar(
+                    radius: 25.r,
+                    backgroundColor: primaryColor.withOpacity(0.1),
+                    backgroundImage: _profileUrl != null
+                        ? NetworkImage(_profileUrl!) as ImageProvider
+                        : null,
+                    child: _profileUrl == null
+                        ? Icon(Icons.person, size: 35.sp, color: primaryColor)
+                        : null,
+                  ),
             SizedBox(width: 12.w),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hello',
-                  style: GoogleFonts.lora(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Hello',
+                      style: GoogleFonts.lora(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                    Text(
+                      _isLoading ? 'Loading...' : _name,
+                      style: GoogleFonts.lora(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: primaryText,
+                      ),
+                    ),
+                  ],
                 ),
                 Text(
                   'Find your dream home',

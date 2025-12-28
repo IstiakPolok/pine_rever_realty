@@ -10,6 +10,14 @@ import '../../ mortgage_Pre-approval_letter/screen/ Mortgage_pre-approval_letter
 import '../../../../../core/const/app_colors.dart';
 import '../../../../../core/services_class/auth_service.dart';
 import '../../AgreementList/Screen/AgreementListScreen.dart';
+
+// Networking & shared preferences
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import '../../../../../core/network_caller/endpoints.dart';
+import '../../../../../core/models/profile_response.dart';
+import '../../../../../core/services_class/local_service/shared_preferences_helper.dart';
 import '../../ChangePasswordScreen/screen/ChangePasswordScreen.dart';
 import '../../DeleteAccount/screens/DeleteAccountScreen.dart';
 import '../../EditProfile/Screen/editProfileScreen.dart';
@@ -17,14 +25,70 @@ import '../../PrivacySecurity/screen/PrivacySecurityScreen.dart';
 import '../../TermsConditions/Screen/TermsConditionsScreen.dart';
 import '../../screens/ScheduleListScreen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  ProfileResponse? profile;
+  bool isLoading = true;
 
   static const Color _redColor = Color(0xFFE53935);
   static const Color _bgGrey = Color(0xFFF9F9F9);
 
   @override
+  void initState() {
+    super.initState();
+    fetchProfile();
+  }
+
+  Future<void> fetchProfile() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'No access token found');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(Urls.buyerProfile),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          profile = ProfileResponse.fromJson(data);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        Get.snackbar('Error', 'Failed to load profile');
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      Get.snackbar('Error', 'An error occurred: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading)
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -106,9 +170,12 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: CircleAvatar(
                       radius: 60.r,
-                      backgroundImage: const NetworkImage(
-                        'https://images.unsplash.com/photo-1566492031773-4f4e44671857?fit=crop&w=400&q=80',
-                      ),
+                      backgroundImage: profile?.profileImage != null
+                          ? NetworkImage(profile!.profileImage!)
+                          : const NetworkImage(
+                                  'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=',
+                                )
+                                as ImageProvider,
                     ),
                   ),
                 ),
@@ -132,7 +199,11 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Cody Fisher',
+                          profile == null ||
+                                  (profile!.firstName ?? '').trim().isEmpty
+                              ? 'User'
+                              : '${profile!.firstName ?? ''} ${profile!.lastName ?? ''}'
+                                    .trim(),
                           style: GoogleFonts.lora(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
@@ -141,7 +212,9 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'Member since Oct 2025',
+                          profile != null
+                              ? 'Member since ${DateFormat('MMM yyyy').format(profile!.createdAt)}'
+                              : 'Member since',
                           style: GoogleFonts.poppins(
                             fontSize: 12.sp,
                             color: secondaryText,
@@ -150,8 +223,15 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        Get.to(EditProfileScreen());
+                      onPressed: () async {
+                        if (profile != null) {
+                          final result = await Get.to(
+                            () => EditProfileScreen(profile: profile),
+                          );
+                          if (result == true) {
+                            fetchProfile(); // refresh on return
+                          }
+                        }
                       },
                       icon: Icon(Icons.edit, size: 14.sp, color: Colors.white),
                       label: Text(
@@ -205,14 +285,17 @@ class ProfileScreen extends StatelessWidget {
                     SizedBox(height: 16.h),
                     _buildContactRow(
                       Icons.email_outlined,
-                      'john.doe@example.com',
+                      profile?.email ?? 'Not provided',
                     ),
                     SizedBox(height: 12.h),
-                    _buildContactRow(Icons.phone_outlined, '(555) 123-4567'),
+                    _buildContactRow(
+                      Icons.phone_outlined,
+                      profile?.phoneNumber ?? 'Not provided',
+                    ),
                     SizedBox(height: 12.h),
                     _buildContactRow(
                       Icons.location_on_outlined,
-                      'Springfield, IL',
+                      profile?.location ?? 'Not provided',
                     ),
                   ],
                 ),

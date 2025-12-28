@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/const/app_colors.dart';
+import '../../../../core/models/profile_response.dart';
+import '../../../../core/network_caller/endpoints.dart';
+import '../../../../core/services_class/agent_listing_service.dart';
+import '../../../../core/services_class/local_service/shared_preferences_helper.dart';
 import '../../Notification/Screens/NotificationScreen.dart';
 import '../../PropertyListScreen/screens/PropertyListScreen.dart';
 import '../../PropertyDetailsScreen /screens/PropertyDetailsScreen.dart';
@@ -15,6 +21,12 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _ProfileHeaderData {
+  final String name;
+  final String? imageUrl;
+  _ProfileHeaderData({required this.name, this.imageUrl});
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   // State for collapsible sections
   bool _isMlsExpanded = true;
@@ -23,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Mock Data for Properties
   final List<Map<String, dynamic>> _mlsProperties = [
     {
+      "id": 101,
+      "agent_id": 1,
       "title": "Modern Family Home",
       "address": "123 Oak Street, Springfield",
       "price": "\$849,000",
@@ -35,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
       "isFavorite": false,
     },
     {
+      "id": 102,
+      "agent_id": 1,
       "title": "Luxury Downtown Condo",
       "address": "456 Main Avenue, Downtown",
       "price": "\$225,000",
@@ -48,32 +64,97 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _agentProperties = [
-    {
-      "title": "Charming Suburban House",
-      "address": "789 Maple Drive, Westside",
-      "price": "\$675,000",
-      "beds": 3,
-      "baths": 2,
-      "sqft": "2,200",
-      "agent": "Michael Chen",
-      "image":
-          "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?fit=crop&w=800&q=80",
-      "isFavorite": false,
-    },
-    {
-      "title": "Luxury Downtown Condo",
-      "address": "456 Main Avenue, Downtown",
-      "price": "\$225,000",
-      "beds": 4,
-      "baths": 3,
-      "sqft": "1,500",
-      "agent": "Sarah Johnson",
-      "image":
-          "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?fit=crop&w=800&q=80",
-      "isFavorite": true,
-    },
-  ];
+  List<Map<String, dynamic>> _agentProperties = [];
+  bool _isAgentPropertiesLoading = true;
+
+  _ProfileHeaderData? _profileHeader;
+  bool _profileLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAgentProperties();
+    _fetchProfileHeader();
+  }
+
+  Future<void> _loadAgentProperties() async {
+    setState(() {
+      _isAgentPropertiesLoading = true;
+    });
+    final resp = await AgentListingService.fetchAgentListings(
+      page: 1,
+      perPage: 5,
+    );
+    setState(() {
+      if (resp != null) {
+        _agentProperties = resp.results
+            .map(
+              (e) => {
+                'id': e.id,
+                'agent_id': e.agentId,
+                'title': e.title.isNotEmpty ? e.title : 'No title',
+                'address': e.address,
+                'price': '\$${e.price.toString()}',
+                'beds': e.bedrooms,
+                'baths': e.bathrooms,
+                'sqft': e.squareFeet.toString(),
+                'agent': e.agentName,
+                'image':
+                    e.photoUrl ??
+                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fit=crop&w=100&q=80',
+                'isFavorite': false,
+              },
+            )
+            .toList();
+      } else {
+        _agentProperties = [];
+      }
+      _isAgentPropertiesLoading = false;
+    });
+  }
+
+  Future<void> _fetchProfileHeader() async {
+    setState(() {
+      _profileLoading = true;
+    });
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        setState(() {
+          _profileHeader = null;
+          _profileLoading = false;
+        });
+        return;
+      }
+      final response = await http.get(
+        Uri.parse(Urls.buyerProfile),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final profile = ProfileResponse.fromJson(data);
+        final name =
+            ((profile.firstName ?? '') + ' ' + (profile.lastName ?? '')).trim();
+        setState(() {
+          _profileHeader = _ProfileHeaderData(
+            name: name.isNotEmpty ? name : profile.username,
+            imageUrl: profile.profileImage,
+          );
+          _profileLoading = false;
+        });
+      } else {
+        setState(() {
+          _profileHeader = null;
+          _profileLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _profileHeader = null;
+        _profileLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => PropertyDetailsScreen(),
+                              builder: (context) =>
+                                  PropertyDetailsScreen(property: prop),
                             ),
                           );
                         },
@@ -141,18 +223,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   if (_isAgentExpanded) ...[
                     SizedBox(height: 16.h),
-                    ..._agentProperties.map(
-                      (prop) => GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => PropertyDetailsScreen(),
-                            ),
-                          );
-                        },
-                        child: _buildPropertyCard(prop),
+                    if (_isAgentPropertiesLoading)
+                      Center(child: CircularProgressIndicator())
+                    else if (_agentProperties.isEmpty)
+                      Center(
+                        child: Text(
+                          'No agent listings found',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      )
+                    else
+                      ..._agentProperties.map(
+                        (prop) => GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PropertyDetailsScreen(property: prop),
+                              ),
+                            );
+                          },
+                          child: _buildPropertyCard(prop),
+                        ),
                       ),
-                    ),
                   ],
                 ],
               ),
@@ -169,24 +262,33 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fit=crop&w=100&q=80',
-              ),
-            ),
+            _profileLoading
+                ? const CircleAvatar(radius: 24, backgroundColor: Colors.grey)
+                : CircleAvatar(
+                    radius: 24,
+                    backgroundImage:
+                        (_profileHeader?.imageUrl != null &&
+                            _profileHeader!.imageUrl!.isNotEmpty)
+                        ? NetworkImage(_profileHeader!.imageUrl!)
+                        : const NetworkImage(
+                                'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8=',
+                              )
+                              as ImageProvider,
+                  ),
             SizedBox(width: 12.w),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hello',
-                  style: GoogleFonts.lora(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
-                  ),
-                ),
+                _profileLoading
+                    ? Container(width: 80, height: 16, color: Colors.grey[300])
+                    : Text(
+                        _profileHeader?.name ?? 'Hello',
+                        style: GoogleFonts.lora(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
                 Text(
                   'Find your dream home',
                   style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
