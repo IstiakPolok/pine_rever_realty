@@ -1,11 +1,19 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:signature/signature.dart';
+import 'package:http/http.dart' as http;
+import 'package:get/get.dart';
 
 import '../../../../core/const/app_colors.dart';
+import '../../../../core/models/notification_model.dart';
+import '../../../../core/network_caller/endpoints.dart';
+import '../../../../core/services_class/local_service/shared_preferences_helper.dart';
 
 class ShowingAgreementScreen extends StatefulWidget {
-  const ShowingAgreementScreen({super.key});
+  final NotificationItem? notification;
+  const ShowingAgreementScreen({super.key, this.notification});
 
   @override
   State<ShowingAgreementScreen> createState() => _ShowingAgreementScreenState();
@@ -18,6 +26,19 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
   bool _is7Days = false;
   bool _isOneProperty = false;
   bool _agreedToTerms = false;
+  bool _isSubmitting = false;
+
+  final SignatureController _signatureController = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+
+  @override
+  void dispose() {
+    _signatureController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,15 +106,20 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
             _buildSectionTitle('Buyer Information'),
             _buildUnderlinedField(
               label: 'Buyer Name',
-              initialValue: 'John Doe',
+              initialValue:
+                  widget.notification?.buyerDetails?.fullName ?? 'John Doe',
             ),
             _buildUnderlinedField(
               label: 'Contact Number',
-              initialValue: '+1 555 0123',
+              initialValue:
+                  widget.notification?.buyerDetails?.phoneNumber ??
+                  '+1 555 0123',
             ),
             _buildUnderlinedField(
               label: 'Email',
-              initialValue: 'johndoe@example.com',
+              initialValue:
+                  widget.notification?.buyerDetails?.email ??
+                  'johndoe@example.com',
             ),
             const SizedBox(height: 24),
 
@@ -101,11 +127,15 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
             _buildSectionTitle('Agent Information'),
             _buildUnderlinedField(
               label: 'Agent Name',
-              initialValue: 'Sarah Johnson',
+              initialValue:
+                  widget.notification?.agentDetails?.fullName ??
+                  'Sarah Johnson',
             ),
             _buildUnderlinedField(
               label: 'License Number',
-              initialValue: 'RE-12345678',
+              initialValue:
+                  widget.notification?.agentDetails?.licenseNumber ??
+                  'RE-12345678',
             ),
             _buildUnderlinedField(
               label: 'Agency Name',
@@ -138,11 +168,15 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
             ),
             _buildUnderlinedField(
               label: 'Property Address (if applicable)',
-              initialValue: '123 Oak Street, Springfield',
+              initialValue:
+                  widget.notification?.propertyDetails?.address ??
+                  '123 Oak Street, Springfield',
             ),
             _buildUnderlinedField(
               label: 'Showing Date',
-              initialValue: 'Nov 15, 2025',
+              initialValue:
+                  widget.notification?.showingDetails?.requestedDate ??
+                  DateFormat('MMM dd, yyyy').format(DateTime.now()),
             ),
             const SizedBox(height: 24),
 
@@ -217,34 +251,48 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              // In a real app, you would use a Signature Pad widget here
-              // For UI purposes, keep it empty or add a placeholder
+            Stack(
+              children: [
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Signature(
+                    controller: _signatureController,
+                    height: 150,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.red, size: 20),
+                    onPressed: () {
+                      _signatureController.clear();
+                    },
+                    tooltip: 'Clear Signature',
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            _buildUnderlinedField(label: 'Date', initialValue: 'Nov 12, 2025'),
+            _buildUnderlinedField(
+              label: 'Date',
+              initialValue: DateFormat('MMM dd, yyyy').format(DateTime.now()),
+            ),
             const SizedBox(height: 32),
 
             // Finish Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _agreedToTerms
-                    ? () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Agreement Signed Successfully!'),
-                          ),
-                        );
-                      }
+                onPressed: (_agreedToTerms && !_isSubmitting)
+                    ? _submitAgreement
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
@@ -255,20 +303,29 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.edit_outlined, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Finish & Sign',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Finish & Sign',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -276,6 +333,109 @@ class _ShowingAgreementScreenState extends State<ShowingAgreementScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _submitAgreement() async {
+    if (widget.notification?.showingScheduleId == null) {
+      Get.snackbar(
+        'Error',
+        'Showing schedule ID not found',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    if (_signatureController.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please provide a signature',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      setState(() => _isSubmitting = true);
+
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) {
+        Get.snackbar(
+          'Error',
+          'Authentication token not found',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final signatureBytes = await _signatureController.toPngBytes();
+      if (signatureBytes == null) {
+        Get.snackbar(
+          'Error',
+          'Failed to capture signature',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final url = Urls.signShowingAgreement(
+        widget.notification!.showingScheduleId!,
+      );
+
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'signature',
+          signatureBytes,
+          filename: 'signature.png',
+        ),
+      );
+
+      request.fields['agreement_accepted'] = 'yes';
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      print('Sign Agreement Response Status: ${response.statusCode}');
+      print('Sign Agreement Response Body: $responseBody');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.back();
+        Get.snackbar(
+          'Success',
+          'Agreement Signed Successfully!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to submit agreement: ${response.statusCode}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      print('Error submitting agreement: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   // --- Helper Widgets ---

@@ -33,10 +33,6 @@ class _AgentCreateListingScreenState extends State<AgentCreateListingScreen> {
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Get.back(),
-                        child: Icon(Icons.arrow_back, size: 24.sp),
-                      ),
                       SizedBox(width: 12.w),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

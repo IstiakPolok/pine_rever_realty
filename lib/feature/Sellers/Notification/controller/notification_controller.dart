@@ -44,8 +44,8 @@ class NotificationController extends GetxController {
         final jsonData = json.decode(response.body);
         final notificationResponse = NotificationResponse.fromJson(jsonData);
 
-        notifications.value = notificationResponse.results;
-        unreadCount.value = notificationResponse.results
+        notifications.value = notificationResponse.results ?? [];
+        unreadCount.value = (notificationResponse.results ?? [])
             .where((n) => !n.isRead)
             .length;
       } else {

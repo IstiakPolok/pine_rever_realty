@@ -4,9 +4,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../core/const/app_colors.dart';
-import '../../../../core/services_class/profile_service.dart';
-import '../../../auth/login/model/login_response_model.dart';
+import '../../../../core/models/agent_listing_model.dart';
 import '../../notification/screens/AgentNotificationScreen.dart';
+import '../Controller/agent_home_controller.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   const AgentHomeScreen({super.key});
@@ -16,73 +16,53 @@ class AgentHomeScreen extends StatefulWidget {
 }
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
-  int _selectedTab = 0; // 0: Pending, 1: Approved
-  UserModel? _user;
-  String _name = '...';
-  String? _profileUrl;
-
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    setState(() => _isLoading = true);
-    final user = await ProfileService.fetchAgentProfile();
-    if (user != null) {
-      setState(() {
-        _user = user;
-        _name = user.fullName.isNotEmpty ? user.fullName : user.username;
-        _profileUrl = user.profilePicture;
-      });
-    }
-    setState(() => _isLoading = false);
-  }
+  final AgentHomeController _controller = Get.put(AgentHomeController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Initialize ScreenUtil
-          return SingleChildScrollView(
-            child: Container(
-              width: double.infinity,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 50.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Top Bar
-                    _buildTopBar(),
-                    SizedBox(height: 24.h),
+      body: Obx(() {
+        if (_controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Initialize ScreenUtil
+            return SingleChildScrollView(
+              child: Container(
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 50.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Top Bar
+                      _buildTopBar(),
+                      SizedBox(height: 24.h),
 
-                    // 2. Search Bar
-                    _buildSearchBar(),
-                    SizedBox(height: 24.h),
+                      // 2. Search Bar
+                      _buildSearchBar(),
+                      SizedBox(height: 24.h),
 
-                    // 3. Stats Grid
-                    _buildStatsGrid(),
-                    SizedBox(height: 24.h),
+                      // 3. Stats Grid
+                      _buildStatsGrid(),
+                      SizedBox(height: 24.h),
 
-                    // 4. Tab Switcher
-                    _buildTabSwitcher(),
-                    SizedBox(height: 24.h),
-
-                    // 5. Property List
-                    _buildPropertyList(),
-                    SizedBox(height: 20.h),
-                  ],
+                      // 4. Property List
+                      _buildPropertyList(),
+                      SizedBox(height: 20.h),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        );
+      }),
     );
   }
 
@@ -92,22 +72,17 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       children: [
         Row(
           children: [
-            _isLoading
-                ? SizedBox(
-                    width: 60.r,
-                    height: 60.r,
-                    child: const Center(child: CircularProgressIndicator()),
-                  )
-                : CircleAvatar(
-                    radius: 25.r,
-                    backgroundColor: primaryColor.withOpacity(0.1),
-                    backgroundImage: _profileUrl != null
-                        ? NetworkImage(_profileUrl!) as ImageProvider
-                        : null,
-                    child: _profileUrl == null
-                        ? Icon(Icons.person, size: 35.sp, color: primaryColor)
-                        : null,
-                  ),
+            CircleAvatar(
+              radius: 25.r,
+              backgroundColor: primaryColor.withOpacity(0.1),
+              backgroundImage: _controller.user.value?.profilePicture != null
+                  ? NetworkImage(_controller.user.value!.profilePicture!)
+                        as ImageProvider
+                  : null,
+              child: _controller.user.value?.profilePicture == null
+                  ? Icon(Icons.person, size: 35.sp, color: primaryColor)
+                  : null,
+            ),
             SizedBox(width: 12.w),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +98,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                       ),
                     ),
                     Text(
-                      _isLoading ? 'Loading...' : _name,
+                      _controller.user.value?.fullName.isNotEmpty == true
+                          ? ' ${_controller.user.value!.fullName}'
+                          : ' ${_controller.user.value?.username ?? 'Agent'}',
                       style: GoogleFonts.lora(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
@@ -186,6 +163,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   }
 
   Widget _buildStatsGrid() {
+    final stats = _controller.stats.value;
     return Column(
       children: [
         Row(
@@ -195,7 +173,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                 icon: Icons.access_time,
                 iconColor: secondaryColor,
                 iconBgColor: const Color(0xFFFCEDE0),
-                count: '12',
+                count: stats.pendingCount.toString(),
                 label: 'Pending Review',
                 countColor: secondaryColor,
               ),
@@ -206,7 +184,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                 icon: Icons.check_circle_outline,
                 iconColor: const Color(0xFF2D6A5F),
                 iconBgColor: const Color(0xFFE0F2F1),
-                count: '45',
+                count: stats.acceptedCount.toString(),
                 label: 'Approved',
                 countColor: const Color(0xFF2D6A5F),
               ),
@@ -218,8 +196,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           icon: Icons.home_outlined,
           iconColor: secondaryColor,
           iconBgColor: const Color(0xFFFCEDE0),
-          count: '8',
-          label: 'Sold This Month',
+          count: stats.totalRequests.toString(),
+          label: 'Total Requests',
           countColor: secondaryColor,
           isFullWidth: true,
         ),
@@ -280,181 +258,49 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  Widget _buildTabSwitcher() {
-    return Container(
-      padding: EdgeInsets.all(4.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTabButton(
-              text: 'Pending (3)',
-              isSelected: _selectedTab == 0,
-              color: secondaryColor,
-              icon: Icons.access_time,
-              onTap: () => setState(() => _selectedTab = 0),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: _buildTabButton(
-              text: 'Approved (2)',
-              isSelected: _selectedTab == 1,
-              color: const Color(0xFF2D6A5F),
-              icon: Icons.check_circle_outline,
-              onTap: () => setState(() => _selectedTab = 1),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton({
-    required String text,
-    required bool isSelected,
-    required Color color,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(25.r),
-          border: isSelected ? null : Border.all(color: Colors.transparent),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildPropertyList() {
+    final listings = _controller.listings;
+    if (listings.isEmpty) {
+      return Center(
+        child: Column(
           children: [
+            SizedBox(height: 40.h),
             Icon(
-              icon,
-              size: 16.sp,
-              color: isSelected ? Colors.white : Colors.grey[600],
+              Icons.home_work_outlined,
+              size: 64.sp,
+              color: Colors.grey[300],
             ),
-            SizedBox(width: 8.w),
+            SizedBox(height: 16.h),
             Text(
-              text,
+              'No properties found',
               style: GoogleFonts.lora(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[600],
+                fontSize: 16.sp,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-      ),
+      );
+    }
+
+    return Column(
+      children: listings
+          .map(
+            (listing) => Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: _buildPropertyCard(listing),
+            ),
+          )
+          .toList(),
     );
   }
 
-  Widget _buildPropertyList() {
-    if (_selectedTab == 0) {
-      // Pending List
-      return Column(
-        children: [
-          _buildPropertyCard(
-            image:
-                'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?fit=crop&w=800&q=80',
-            title: 'Modern Family Home',
-            address: '123 Maple Street, Springfield, IL',
-            price: '\$450,000',
-            details: '4 bed • 3 bath • 2500 sqft',
-            agentName: 'By John Smith',
-            time: '2 hours ago',
-            status: 'Pending',
-            statusColor: secondaryColor,
-            showActions: true,
-          ),
-          SizedBox(height: 16.h),
-          _buildPropertyCard(
-            image:
-                'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?fit=crop&w=800&q=80',
-            title: 'Luxury Estate',
-            address: '456 Oak Avenue, Springfield, IL',
-            price: '\$750,000',
-            details: '5 bed • 4 bath • 3800 sqft',
-            agentName: 'By Sarah Johnson',
-            time: '5 hours ago',
-            status: 'Pending',
-            statusColor: secondaryColor,
-            showActions: true,
-          ),
-          SizedBox(height: 16.h),
-          _buildPropertyCard(
-            image:
-                'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?fit=crop&w=800&q=80',
-            title: 'Cozy Townhouse',
-            address: '789 Pine Road, Springfield, IL',
-            price: '\$320,000',
-            details: '3 bed • 2 bath • 1800 sqft',
-            agentName: 'By Mike Davis',
-            time: '1 day ago',
-            status: 'Pending',
-            statusColor: secondaryColor,
-            showActions: true,
-          ),
-        ],
-      );
-    } else {
-      // Approved List
-      return Column(
-        children: [
-          _buildPropertyCard(
-            image:
-                'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?fit=crop&w=800&q=80',
-            title: 'Downtown Condo',
-            address: '321 Main Street, Springfield, IL',
-            price: '\$380,000',
-            details: '2 bed • 2 bath • 1400 sqft',
-            agentName: '',
-            time: '3 days ago',
-            status: 'Approved',
-            statusColor: const Color(0xFF2D6A5F),
-            showActions: false,
-          ),
-          SizedBox(height: 16.h),
-          _buildPropertyCard(
-            image:
-                'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?fit=crop&w=800&q=80',
-            title: 'Suburban Paradise',
-            address: '654 Elm Drive, Springfield, IL',
-            price: '\$520,000',
-            details: '4 bed • 3 bath • 2800 sqft',
-            agentName: '',
-            time: '1 week ago',
-            status: 'Approved',
-            statusColor: const Color(0xFF2D6A5F),
-            showActions: false,
-          ),
-        ],
-      );
-    }
-  }
+  Widget _buildPropertyCard(AgentListing listing) {
+    Color statusColor = listing.status == 'for_sale'
+        ? blueColor
+        : secondaryColor;
 
-  Widget _buildPropertyCard({
-    required String image,
-    required String title,
-    required String address,
-    required String price,
-    required String details,
-    required String agentName,
-    required String time,
-    required String status,
-    required Color statusColor,
-    required bool showActions,
-  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -474,12 +320,28 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-                child: Image.network(
-                  image,
-                  height: 180.h,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                child: listing.photoUrl != null
+                    ? Image.network(
+                        listing.photoUrl!,
+                        height: 180.h,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180.h,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      )
+                    : Container(
+                        height: 180.h,
+                        width: double.infinity,
+                        color: Colors.grey[200],
+                        child: Icon(Icons.image, color: Colors.grey[400]),
+                      ),
               ),
               Positioned(
                 top: 12.h,
@@ -494,7 +356,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
-                    status,
+                    listing.status.replaceAll('_', ' ').capitalizeFirst ?? '',
                     style: GoogleFonts.lora(
                       color: Colors.white,
                       fontSize: 12.sp,
@@ -510,27 +372,26 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.lora(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: primaryText,
-                      ),
-                    ),
-                  ],
+                Text(
+                  listing.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lora(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: primaryText,
+                  ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  address,
+                  listing.address,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  price,
+                  '\$${listing.price.toStringAsFixed(0)}',
                   style: GoogleFonts.lora(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w600,
@@ -538,83 +399,51 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   ),
                 ),
                 SizedBox(height: 8.h),
-                Text(
-                  details,
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.king_bed_outlined,
+                      size: 16.sp,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${listing.bedrooms} bed',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Icon(
+                      Icons.bathroom_outlined,
+                      size: 16.sp,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${listing.bathrooms.toInt()} bath',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Icon(
+                      Icons.square_foot_outlined,
+                      size: 16.sp,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${listing.squareFeet} sqft',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                if (agentName.isNotEmpty) ...[
-                  SizedBox(height: 8.h),
-                  Row(
-                    children: [
-                      Text(
-                        agentName,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      Text(
-                        ' • $time',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  SizedBox(height: 8.h),
-                  Text(
-                    time,
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                  ),
-                ],
-                if (showActions) ...[
-                  SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: BorderSide(
-                              color: Colors.red.withOpacity(0.2),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20.r),
-                            ),
-                          ),
-                          child: Text(
-                            'Decline',
-                            style: GoogleFonts.lora(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B4D3E),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20.r),
-                            ),
-                          ),
-                          child: Text(
-                            'Approve',
-                            style: GoogleFonts.lora(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),

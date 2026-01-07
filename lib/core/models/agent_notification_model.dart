@@ -42,6 +42,7 @@ class AgentNotificationItem {
   final String? documentType;
   final String? cmaStatus;
   final int? showingScheduleId;
+  final String? showingStatus;
   final String? buyerName;
   final String? propertyTitle;
   final String? actionUrl;
@@ -64,6 +65,7 @@ class AgentNotificationItem {
     this.documentType,
     this.cmaStatus,
     this.showingScheduleId,
+    this.showingStatus,
     this.buyerName,
     this.propertyTitle,
     this.actionUrl,
@@ -88,6 +90,7 @@ class AgentNotificationItem {
       documentType: json['document_type'],
       cmaStatus: json['cma_status'],
       showingScheduleId: json['showing_schedule_id'],
+      showingStatus: json['showing_status'],
       buyerName: json['buyer_name'],
       propertyTitle: json['property_title'],
       actionUrl: json['action_url'],
@@ -98,10 +101,9 @@ class AgentNotificationItem {
     );
   }
 
-  // Helper to get relative time (e.g., "5 hours ago")
   String get relativeTime {
     try {
-      final dateTime = DateTime.parse(createdAt);
+      final dateTime = DateTime.parse(createdAt).toLocal();
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 

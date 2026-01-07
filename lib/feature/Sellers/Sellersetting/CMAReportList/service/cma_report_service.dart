@@ -5,7 +5,7 @@ import '../model/cma_report_model.dart';
 import '../../../../../core/network_caller/endpoints.dart';
 
 class CMAReportService {
-  static const String _endpoint = 'http://10.10.13.27:8005/api/v1/seller/cma/';
+  static const String _endpoint = '${Urls.baseUrl}/seller/cma/';
 
   Future<CMAReportListResponse?> fetchCMAReports() async {
     try {

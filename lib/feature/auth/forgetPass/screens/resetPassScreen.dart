@@ -10,6 +10,7 @@ import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/authTextfield.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
+import '../../../../core/network_caller/endpoints.dart';
 import '../controller/resetPassController.dart';
 
 class resetPassScreen extends StatefulWidget {
@@ -156,7 +157,7 @@ class _resetPassScreenState extends State<resetPassScreen> {
                               try {
                                 final response = await http.post(
                                   Uri.parse(
-                                    'http://10.10.13.27:8005/api/v1/common/reset-password/',
+                                    '${Urls.baseUrl}/common/reset-password/',
                                   ),
                                   headers: {'Content-Type': 'application/json'},
                                   body: jsonEncode({

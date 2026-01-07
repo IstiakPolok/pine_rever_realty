@@ -9,13 +9,12 @@ import 'package:pine_rever_realty/feature/Buyers/setting/PrivacySecurity/screen/
 import 'package:pine_rever_realty/feature/Buyers/setting/TermsConditions/Screen/TermsConditionsScreen.dart';
 import 'package:pine_rever_realty/core/services_class/auth_service.dart';
 import 'package:pine_rever_realty/core/services_class/profile_service.dart';
-import '../../../Buyers/setting/AgreementList/Screen/AgreementListScreen.dart';
-import '../../../Sellers/Sellersetting/CMAReportList/Screen/CMAReportListScreen.dart';
 import 'AgentProfileScreen.dart';
-import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
-import 'ScheduleListScreen.dart';
-import 'PropertyListScreen.dart';
+import 'AgreementListScreen.dart';
 import 'ChangePasswordScreen.dart';
+import 'PropertyListScreen.dart';
+import 'ScheduleListScreen.dart';
+import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
 
 class AgentSettingsScreen extends StatefulWidget {
   const AgentSettingsScreen({super.key});
@@ -82,10 +81,7 @@ class _AgentSettingsScreenState extends State<AgentSettingsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+
         title: Text(
           'Settings',
           style: GoogleFonts.lora(
@@ -230,7 +226,7 @@ class _AgentSettingsScreenState extends State<AgentSettingsScreen> {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const AgreementListScreen(),
+                          builder: (context) => AgreementListScreen(),
                         ),
                       );
                     },

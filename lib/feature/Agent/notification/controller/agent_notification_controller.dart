@@ -12,8 +12,9 @@ class AgentNotificationController extends GetxController {
   final unreadCount = 0.obs;
   final errorMessage = ''.obs;
 
-  // Track per-selling-request update state so the UI can show a spinner
+  // Track update states so the UI can show a spinner
   final updatingRequests = <int, bool>{}.obs;
+  final updatingShowings = <int, bool>{}.obs;
   final sellingRequestDetails = <int, SellingRequest>{}.obs;
 
   @override
@@ -30,19 +31,20 @@ class AgentNotificationController extends GetxController {
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null) {
         errorMessage.value = 'No access token found';
-        Get.snackbar('Error', 'Please log in again');
         return;
       }
 
+      final url = '${Urls.baseUrl}/agent/notifications/?page=$page';
+      print('Agent Notifications URL: $url');
       final response = await http.get(
-        Uri.parse('${Urls.baseUrl}/agent/notifications/?page=$page'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
 
-      print('Agent Notifications response: ${response.statusCode}');
+      print('Agent Notifications status: ${response.statusCode}');
       print('Agent Notifications body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -63,23 +65,13 @@ class AgentNotificationController extends GetxController {
             fetchSellingRequestDetail(notification.sellingRequestId!);
           }
         }
-
-        // Fetch details for selling requests
-        for (var notification in notifications) {
-          if (notification.notificationType == 'new_selling_request' &&
-              notification.sellingRequestId != null) {
-            fetchSellingRequestDetail(notification.sellingRequestId!);
-          }
-        }
       } else {
         errorMessage.value =
             'Failed to load notifications: ${response.statusCode}';
-        Get.snackbar('Error', errorMessage.value);
       }
     } catch (e) {
       print('Error fetching agent notifications: $e');
       errorMessage.value = 'An error occurred: $e';
-      Get.snackbar('Error', 'Failed to load notifications');
     } finally {
       isLoading.value = false;
     }
@@ -90,10 +82,11 @@ class AgentNotificationController extends GetxController {
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null) return;
 
+      final url =
+          '${Urls.baseUrl}/agent/notifications/$notificationId/mark-read/';
+      print('Mark As Read URL: $url');
       final response = await http.patch(
-        Uri.parse(
-          '${Urls.baseUrl}/agent/notifications/$notificationId/mark-read/',
-        ),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -101,30 +94,31 @@ class AgentNotificationController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        // Update local state
         final index = notifications.indexWhere((n) => n.id == notificationId);
         if (index != -1) {
+          final old = notifications[index];
           notifications[index] = AgentNotificationItem(
-            id: notifications[index].id,
-            notificationType: notifications[index].notificationType,
-            title: notifications[index].title,
-            message: notifications[index].message,
-            sellingRequestId: notifications[index].sellingRequestId,
-            sellingRequestStatus: notifications[index].sellingRequestStatus,
-            sellerName: notifications[index].sellerName,
-            sellerEmail: notifications[index].sellerEmail,
-            documentId: notifications[index].documentId,
-            documentTitle: notifications[index].documentTitle,
-            documentType: notifications[index].documentType,
-            cmaStatus: notifications[index].cmaStatus,
-            showingScheduleId: notifications[index].showingScheduleId,
-            buyerName: notifications[index].buyerName,
-            propertyTitle: notifications[index].propertyTitle,
-            actionUrl: notifications[index].actionUrl,
-            actionText: notifications[index].actionText,
+            id: old.id,
+            notificationType: old.notificationType,
+            title: old.title,
+            message: old.message,
+            sellingRequestId: old.sellingRequestId,
+            sellingRequestStatus: old.sellingRequestStatus,
+            sellerName: old.sellerName,
+            sellerEmail: old.sellerEmail,
+            documentId: old.documentId,
+            documentTitle: old.documentTitle,
+            documentType: old.documentType,
+            cmaStatus: old.cmaStatus,
+            showingScheduleId: old.showingScheduleId,
+            showingStatus: old.showingStatus,
+            buyerName: old.buyerName,
+            propertyTitle: old.propertyTitle,
+            actionUrl: old.actionUrl,
+            actionText: old.actionText,
             isRead: true,
-            createdAt: notifications[index].createdAt,
-            updatedAt: notifications[index].updatedAt,
+            createdAt: old.createdAt,
+            updatedAt: old.updatedAt,
           );
           notifications.refresh();
           unreadCount.value--;
@@ -140,8 +134,10 @@ class AgentNotificationController extends GetxController {
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null) return;
 
+      final url = '${Urls.baseUrl}/agent/notifications/mark-all-read/';
+      print('Mark All As Read URL: $url');
       final response = await http.post(
-        Uri.parse('${Urls.baseUrl}/agent/notifications/mark-all-read/'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -149,7 +145,6 @@ class AgentNotificationController extends GetxController {
       );
 
       if (response.statusCode == 200) {
-        // Update all notifications to read
         notifications.value = notifications
             .map(
               (n) => AgentNotificationItem(
@@ -166,6 +161,7 @@ class AgentNotificationController extends GetxController {
                 documentType: n.documentType,
                 cmaStatus: n.cmaStatus,
                 showingScheduleId: n.showingScheduleId,
+                showingStatus: n.showingStatus,
                 buyerName: n.buyerName,
                 propertyTitle: n.propertyTitle,
                 actionUrl: n.actionUrl,
@@ -181,7 +177,6 @@ class AgentNotificationController extends GetxController {
       }
     } catch (e) {
       print('Error marking all agent notifications as read: $e');
-      Get.snackbar('Error', 'Failed to mark all as read');
     }
   }
 
@@ -191,19 +186,16 @@ class AgentNotificationController extends GetxController {
   }) async {
     try {
       final token = await SharedPreferencesHelper.getAccessToken();
-      if (token == null) {
-        Get.snackbar('Error', 'No access token found');
-        return;
-      }
+      if (token == null) return;
 
-      // mark as updating so UI can show a spinner for this request
       updatingRequests[sellingRequestId] = true;
       notifications.refresh();
 
+      final url =
+          '${Urls.baseUrl}/agent/selling-requests/$sellingRequestId/status/';
+      print('Update Selling Request Status URL: $url');
       final response = await http.patch(
-        Uri.parse(
-          '${Urls.baseUrl}/agent/selling-requests/$sellingRequestId/status/',
-        ),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -212,45 +204,155 @@ class AgentNotificationController extends GetxController {
         body: json.encode({'status': status}),
       );
 
-      print('Update status response: ${response.statusCode}');
-      print('Update status body: ${response.body}');
-
-      // clear updating flag
       updatingRequests[sellingRequestId] = false;
       notifications.refresh();
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        final message =
-            responseData['message'] ?? 'Request updated successfully';
-        Get.snackbar('Success', message);
-
-        // Refresh notifications after status update
         await fetchNotifications();
+        Get.snackbar('Success', 'Status updated successfully');
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to update request: ${response.statusCode}',
-        );
+        Get.snackbar('Error', 'Failed to update status');
       }
     } catch (e) {
-      print('Error updating selling request status: $e');
-      Get.snackbar('Error', 'An error occurred: $e');
-      // ensure we clear updating flag on error
       updatingRequests[sellingRequestId] = false;
       notifications.refresh();
+      print('Error updating selling request: $e');
+    }
+  }
+
+  Future<void> acceptShowing(int showingScheduleId) async {
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) return;
+
+      updatingShowings[showingScheduleId] = true;
+      notifications.refresh();
+
+      final url = '${Urls.baseUrl}/agent/showings/$showingScheduleId/accept/';
+      print('Accept Showing URL: $url');
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Accept Showing response: ${response.statusCode}');
+      print('Accept Showing body: ${response.body}');
+
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchNotifications();
+        Get.snackbar('Success', 'Showing accepted successfully');
+      } else {
+        Get.snackbar('Error', 'Failed to accept showing');
+      }
+    } catch (e) {
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+      print('Error accepting showing: $e');
+    }
+  }
+
+  Future<void> declineShowing(int showingScheduleId) async {
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) return;
+
+      updatingShowings[showingScheduleId] = true;
+      notifications.refresh();
+
+      final url = '${Urls.baseUrl}/agent/showings/$showingScheduleId/reject/';
+      print('Decline Showing URL: $url');
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+        body: json.encode({'agent_response': 'Declined by agent'}),
+      );
+
+      print('Decline Showing response: ${response.statusCode}');
+      print('Decline Showing body: ${response.body}');
+
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchNotifications();
+        Get.snackbar('Success', 'Showing declined successfully');
+      } else {
+        Get.snackbar('Error', 'Failed to decline showing');
+      }
+    } catch (e) {
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+      print('Error declining showing: $e');
+    }
+  }
+
+  Future<void> updateShowingStatus({
+    required int showingScheduleId,
+    required String status,
+  }) async {
+    if (status == 'accepted') {
+      return acceptShowing(showingScheduleId);
+    } else if (status == 'declined') {
+      return declineShowing(showingScheduleId);
+    }
+    // Fallback for other statuses if any
+    try {
+      final token = await SharedPreferencesHelper.getAccessToken();
+      if (token == null) return;
+
+      updatingShowings[showingScheduleId] = true;
+      notifications.refresh();
+
+      final url = '${Urls.baseUrl}/agent/showings/$showingScheduleId/status/';
+      print('Update Showing Status URL: $url');
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({'status': status}),
+      );
+
+      print('Update Showing Status response: ${response.statusCode}');
+      print('Update Showing Status body: ${response.body}');
+
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+
+      if (response.statusCode == 200) {
+        await fetchNotifications();
+        Get.snackbar('Success', 'Showing status updated successfully');
+      } else {
+        Get.snackbar('Error', 'Failed to update showing status');
+      }
+    } catch (e) {
+      updatingShowings[showingScheduleId] = false;
+      notifications.refresh();
+      print('Error updating showing status: $e');
     }
   }
 
   Future<void> fetchSellingRequestDetail(int id) async {
     if (sellingRequestDetails.containsKey(id)) return;
-
     try {
       final token = await SharedPreferencesHelper.getAccessToken();
       if (token == null) return;
 
+      final url = '${Urls.baseUrl}/agent/selling-requests/$id/';
+      print('Fetch Selling Request Detail URL: $url');
       final response = await http.get(
-        Uri.parse('${Urls.baseUrl}/agent/selling-requests/$id/'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

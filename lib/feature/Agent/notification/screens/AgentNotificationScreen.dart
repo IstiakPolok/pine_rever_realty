@@ -166,6 +166,7 @@ class AgentNotificationScreen extends StatelessWidget {
         icon = Icons.description_outlined;
         break;
       case 'showing_scheduled':
+      case 'showing_requested':
         icon = Icons.calendar_today_outlined;
         break;
     }
@@ -301,6 +302,79 @@ class AgentNotificationScreen extends StatelessWidget {
                 }
               },
             ),
+          ],
+        );
+        break;
+
+      case 'showing_requested':
+        content = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(
+              icon,
+              notification.title,
+              notification.message,
+              notification.relativeTime,
+              isUnread: !notification.isRead,
+            ),
+            SizedBox(height: 16.h),
+            if (notification.title == 'New Showing Request' &&
+                (notification.showingStatus ?? 'pending').toLowerCase() ==
+                    'pending')
+              Obx(
+                () =>
+                    controller.updatingShowings[notification
+                            .showingScheduleId] ==
+                        true
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildDualActionButtons(
+                        onAccept: () {
+                          if (notification.showingScheduleId != null) {
+                            controller.markAsRead(notification.id);
+                            controller.acceptShowing(
+                              notification.showingScheduleId!,
+                            );
+                          }
+                        },
+                        onDecline: () {
+                          if (notification.showingScheduleId != null) {
+                            controller.markAsRead(notification.id);
+                            controller.declineShowing(
+                              notification.showingScheduleId!,
+                            );
+                          }
+                        },
+                      ),
+              )
+            else if (notification.showingStatus != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        notification.showingStatus!.toLowerCase() == 'accepted'
+                        ? const Color(0xFFE8F5E9)
+                        : const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    notification.showingStatus!.toUpperCase(),
+                    style: GoogleFonts.lora(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          notification.showingStatus!.toLowerCase() ==
+                              'accepted'
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFFD32F2F),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
         break;

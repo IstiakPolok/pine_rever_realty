@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pine_rever_realty/core/services_class/profile_service.dart';
 
-class EditMortgageLetterScreen extends StatelessWidget {
+class EditMortgageLetterScreen extends StatefulWidget {
   const EditMortgageLetterScreen({super.key});
 
+  @override
+  State<EditMortgageLetterScreen> createState() =>
+      _EditMortgageLetterScreenState();
+}
+
+class _EditMortgageLetterScreenState extends State<EditMortgageLetterScreen> {
   // Colors
   static const Color _darkGreen = Color(0xFF2D6A5F);
   static const Color _borderGreen = Color(
@@ -14,6 +23,57 @@ class EditMortgageLetterScreen extends StatelessWidget {
   static const Color _disabledBtnColor = Color(
     0xFFE0E0E0,
   ); // Light grey for disabled button
+
+  PlatformFile? _pickedFile;
+  bool _isUploading = false;
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+        allowMultiple: false,
+        withData: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+      setState(() {
+        _pickedFile = result.files.first;
+      });
+    } catch (e) {
+      print('Error picking file: $e');
+      Get.snackbar('Error', 'Failed to pick file');
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    if (_pickedFile == null) {
+      Get.snackbar('No file', 'Please pick a file to upload');
+      return;
+    }
+
+    setState(() => _isUploading = true);
+
+    try {
+      final updated = await ProfileService.updateBuyerProfileMultipart(
+        mortgageLetterPath: _pickedFile!.path,
+        mortgageLetterFilename: _pickedFile!.name,
+      );
+
+      if (updated != null) {
+        Get.snackbar('Success', 'Mortgage letter updated');
+        setState(() {
+          _pickedFile = null;
+        });
+      } else {
+        Get.snackbar('Error', 'Upload failed');
+      }
+    } catch (e) {
+      print('Upload error: $e');
+      Get.snackbar('Error', 'An error occurred');
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,15 +171,14 @@ class EditMortgageLetterScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
 
-                        // Disabled Button (File Name Placeholder)
+                        // Picked File Name or Placeholder
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: null, // Disabled
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _disabledBtnColor,
-                              disabledBackgroundColor:
-                                  _disabledBtnColor, // Explicitly set disabled color
+                              disabledBackgroundColor: _disabledBtnColor,
                               foregroundColor: _textDark,
                               disabledForegroundColor: _textDark,
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -129,7 +188,7 @@ class EditMortgageLetterScreen extends StatelessWidget {
                               elevation: 0,
                             ),
                             child: Text(
-                              'Mortage Letter', // Intentionally matching image typo if needed, or use Mortgage
+                              _pickedFile?.name ?? 'Mortgage Letter',
                               style: GoogleFonts.lora(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -140,35 +199,76 @@ class EditMortgageLetterScreen extends StatelessWidget {
 
                         const SizedBox(height: 24),
 
-                        // Replace Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              // Handle replace action
-                            },
-                            icon: const Icon(
-                              Icons.file_upload_outlined,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              'Replace',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                        // Replace Button (picks file) and Upload Button
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isUploading ? null : _pickFile,
+                                icon: const Icon(
+                                  Icons.attach_file,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                label: Text(
+                                  'Choose File',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _darkGreen,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _darkGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isUploading ? null : _uploadFile,
+                                icon: _isUploading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.file_upload_outlined,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                label: Text(
+                                  _isUploading ? 'Uploading...' : 'Upload',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _darkGreen,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
                               ),
-                              elevation: 0,
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),

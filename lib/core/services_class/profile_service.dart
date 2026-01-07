@@ -86,7 +86,7 @@ class ProfileService {
     }
   }
 
-  /// Multipart PATCH to upload files along with fields.
+  /// Multipart PATCH to upload files along with fields for agent.
   static Future<UserModel?> updateAgentProfileMultipart({
     Map<String, String>? fields,
     String? profilePicturePath,
@@ -169,6 +169,73 @@ class ProfileService {
 
       return null;
     } catch (e) {
+      return null;
+    }
+  }
+
+  /// Multipart PATCH to upload files along with fields for buyer profile.
+  static Future<UserModel?> updateBuyerProfileMultipart({
+    Map<String, String>? fields,
+    String? mortgageLetterPath,
+    List<int>? mortgageLetterBytes,
+    String? mortgageLetterFilename,
+  }) async {
+    try {
+      final token = await AuthService.getAccessToken();
+      if (token == null) return null;
+
+      final uri = Uri.parse(Urls.buyerProfileUpdate);
+      final request = http.MultipartRequest('PATCH', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+
+      if (fields != null) request.fields.addAll(fields);
+
+      if (mortgageLetterPath != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'mortgage_letter',
+            mortgageLetterPath,
+            filename: mortgageLetterFilename,
+          ),
+        );
+      } else if (mortgageLetterBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'mortgage_letter',
+            mortgageLetterBytes,
+            filename: mortgageLetterFilename ?? 'mortgage_letter',
+          ),
+        );
+      }
+
+      // Debug prints
+      print('ProfileService.updateBuyerProfileMultipart: PATCH $uri');
+      print(
+        'ProfileService.updateBuyerProfileMultipart: fields ${request.fields}',
+      );
+      print(
+        'ProfileService.updateBuyerProfileMultipart: files ${request.files.map((f) => f.filename).toList()}',
+      );
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      print(
+        'ProfileService.updateBuyerProfileMultipart: response ${response.statusCode}',
+      );
+      print(
+        'ProfileService.updateBuyerProfileMultipart: body ${response.body}',
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return UserModel.fromJson(data);
+      }
+
+      return null;
+    } catch (e) {
+      print('ProfileService.updateBuyerProfileMultipart error: $e');
       return null;
     }
   }

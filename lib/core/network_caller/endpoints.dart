@@ -1,5 +1,5 @@
 class Urls {
-  static const String baseUrl = 'http://10.10.13.27:8005/api/v1';
+  static const String baseUrl = 'http://72.60.170.141:8006/api/v1';
 
   // Role-specific login endpoints
   static const String agentLogin = '$baseUrl/agent/auth/login/';
@@ -73,9 +73,19 @@ class Urls {
 
   static const String conversationList = '$baseUrl/messaging/conversations/';
 
+  static const String buyerNotifications = '$baseUrl/buyer/notifications/';
+
   // WebSocket Base URL - replacing http with ws and removing /api/v1
   static const String wsBaseUrl = 'ws://10.10.13.27:8005';
 
   static String getCreateListingUrl(String agreementId) =>
       '$baseUrl/agent/agreements/$agreementId/create-listing/';
+
+  static String signShowingAgreement(int showingId) =>
+      '$baseUrl/buyer/showings/$showingId/sign-agreement/';
+
+  static const String agentSellingStats =
+      '$baseUrl/agent/selling-requests/stats/';
+  static const String agentListings = '$baseUrl/agent/listings/';
+  static const String agentAgreements = '$baseUrl/agent/agreements/';
 }

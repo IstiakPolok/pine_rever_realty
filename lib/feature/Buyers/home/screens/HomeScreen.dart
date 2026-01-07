@@ -13,6 +13,7 @@ import '../../../../core/services_class/local_service/shared_preferences_helper.
 import '../../Notification/Screens/NotificationScreen.dart';
 import '../../PropertyListScreen/screens/PropertyListScreen.dart';
 import '../../PropertyDetailsScreen /screens/PropertyDetailsScreen.dart';
+import '../../SavedProperties/services/saved_properties_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -758,11 +759,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: 16.h,
                 right: 16.w,
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      property['isFavorite'] =
-                          !(property['isFavorite'] as bool);
-                    });
+                  onTap: () async {
+                    if (!(property['isFavorite'] as bool)) {
+                      try {
+                        await SavedPropertiesService.addSavedProperty(
+                          property['id'],
+                        );
+                        setState(() {
+                          property['isFavorite'] = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Property saved to favorites'),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to save property')),
+                        );
+                      }
+                    } else {
+                      setState(() {
+                        property['isFavorite'] = false;
+                      });
+                    }
                   },
                   child: Container(
                     padding: EdgeInsets.all(8.w),

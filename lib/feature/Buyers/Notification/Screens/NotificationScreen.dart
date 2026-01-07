@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import '../controller/buyer_notification_controller.dart';
 import '../../ShowingAgreement/screen/ShowingAgreementScreen.dart';
+import '../../../../core/models/notification_model.dart';
 
 class NotificationScreen extends StatelessWidget {
-  const NotificationScreen({super.key});
+  NotificationScreen({super.key});
+
+  final BuyerNotificationController _controller = Get.put(
+    BuyerNotificationController(),
+  );
 
   // Colors
   static const Color _textDark = Color(0xFF212121);
@@ -14,6 +21,31 @@ class NotificationScreen extends StatelessWidget {
   static const Color _orangeDot = Color(0xFFE8772E);
   static const Color _cardBorder = Color(0xFFEEEEEE);
   static const Color _highlightBorder = Color(0xFFE8772E);
+
+  String _formatDateTime(String? dateTimeStr) {
+    if (dateTimeStr == null) return '';
+    try {
+      DateTime dt = DateTime.parse(dateTimeStr).toLocal();
+      return DateFormat('MMM dd, yyyy  hh:mm a').format(dt);
+    } catch (e) {
+      return dateTimeStr;
+    }
+  }
+
+  String _getTimeAgo(String? dateTimeStr) {
+    if (dateTimeStr == null) return '';
+    try {
+      DateTime dt = DateTime.parse(dateTimeStr).toLocal();
+      Duration diff = DateTime.now().difference(dt);
+      if (diff.inDays > 0) return '${diff.inDays} days ago';
+      if (diff.inHours > 0) return '${diff.inHours} hours ago';
+      if (diff.inMinutes > 0) return '${diff.inMinutes} mins ago';
+      return 'just now';
+    } catch (e) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,7 +55,7 @@ class NotificationScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Get.back(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,166 +68,112 @@ class NotificationScreen extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
-              '4 unread message',
-              style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+            Obx(
+              () => Text(
+                '${_controller.unreadCount.value} unread message',
+                style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+              ),
             ),
           ],
         ),
-        // actions: [
-        //   Padding(
-        //     padding: const EdgeInsets.only(right: 16.0),
-        //     child: Center(
-        //       child: Container(
-        //         padding: const EdgeInsets.symmetric(
-        //           horizontal: 12,
-        //           vertical: 6,
-        //         ),
-        //         decoration: BoxDecoration(
-        //           color: const Color(0xFFE0F2F1), // Light teal bg
-        //           borderRadius: BorderRadius.circular(20),
-        //         ),
-        //         child: Text(
-        //           'Mark all read',
-        //           style: TextStyle(
-        //             fontSize: 12,
-        //             fontWeight: FontWeight.w500,
-        //             color: _textDark,
-        //           ),
-        //         ),
-        //       ),
-        //     ),
-        //   ),
-        // ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.all(16.w),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE0F2F1),
-                          borderRadius: BorderRadius.circular(20.r),
-                        ),
-                        child: Text(
-                          'Mark all read',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            color: _textDark,
+            child: Obx(() {
+              if (_controller.isLoading.value) {
+                return const Center(
+                  child: CircularProgressIndicator(color: _greenBtn),
+                );
+              }
+
+              if (_controller.errorMessage.isNotEmpty) {
+                return Center(child: Text(_controller.errorMessage.value));
+              }
+
+              if (_controller.notifications.isEmpty) {
+                return const Center(child: Text('No notifications found'));
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => _controller.fetchNotifications(),
+                color: _greenBtn,
+                child: ListView.builder(
+                  padding: EdgeInsets.all(16.w),
+                  itemCount: _controller.notifications.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: InkWell(
+                              onTap: () {
+                                // Add logic to mark all read if needed
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12.w,
+                                  vertical: 6.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE0F2F1),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                ),
+                                child: Text(
+                                  'Mark all read',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: _textDark,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                _buildNotificationCard(
-                  icon: Icons.notifications_outlined,
-                  title: 'Showing Confirmed',
-                  description:
-                      'Your agreement is ready for digital signature for showing.',
-                  time: '5 hours ago',
-                  isUnread: true,
-                  hasActions: true,
-                  isHighlighted: true,
-                ),
+                        ],
+                      );
+                    }
 
-                // Showing Updated
-                _buildNotificationCard(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Showing Updated',
-                  description:
-                      'Your showing details have been updated by your agent.',
-                  time: '2 hours ago',
-                  isUnread: true,
-                  isHighlighted: true,
-                  contentWidget: Text(
-                    'Your showing time & date has been changed. Check your schedule list for updates.',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: _textGrey,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
+                    final notification = _controller.notifications[index - 1];
+                    IconData icon = Icons.notifications_outlined;
+                    if (notification.notificationType == 'showing_accepted' ||
+                        notification.notificationType == 'showing_scheduled' ||
+                        notification.notificationType == 'showing_declined') {
+                      icon = Icons.calendar_today_outlined;
+                    }
 
-                // Showing Declined
-                _buildNotificationCard(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Showing Declined',
-                  description:
-                      'Your appointment scheduled has been declined by the agent. We apologize for the inconvenience and will contact you soon to arrange a new time.',
-                  time: '2 hours ago',
-                  isUnread: true,
-                  isHighlighted: true,
-                  contentWidget: _buildPropertyContent(
-                    image:
-                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=200&q=80',
-                    title: 'Luxury Downtown Condo',
-                    address: '456 Main Avenue, Downtown',
-                    dateTime: 'Nov 15, 2025  10:00 AM',
-                    agentName: 'Michael Chen',
-                  ),
+                    return _buildNotificationCard(
+                      notification: notification,
+                      icon: icon,
+                      title: notification.title ?? 'New Notification',
+                      description: notification.message ?? '',
+                      time: _getTimeAgo(notification.createdAt),
+                      isUnread: !(notification.isRead),
+                      hasActions:
+                          notification.actionText != null &&
+                          notification.title != 'Showing Request Declined' &&
+                          notification.title !=
+                              'Agreement Signed Successfully ✓',
+                      isHighlighted: !(notification.isRead),
+                      actionText: notification.actionText,
+                      contentWidget: notification.propertyTitle != null
+                          ? _buildPropertyContent(
+                              image:
+                                  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=200&q=80', // No image in notification results, using fallback
+                              title: notification.propertyTitle!,
+                              address:
+                                  '', // No address in results, would be nice to have
+                              dateTime: _formatDateTime(notification.createdAt),
+                              agentName: notification.agentName ?? 'Agent',
+                            )
+                          : null,
+                    );
+                  },
                 ),
-
-                _buildNotificationCard(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Showing Scheduled Successful',
-                  description: 'Your showing has been scheduled successfully',
-                  time: '2 hours ago',
-                  isUnread: true,
-                  isHighlighted: true,
-                  contentWidget: _buildPropertyContent(
-                    image:
-                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?fit=crop&w=200&q=80',
-                    title: 'Luxury Downtown Condo',
-                    address: '456 Main Avenue, Downtown',
-                    dateTime: 'Nov 15, 2025  10:00 AM',
-                    agentName: 'Michael Chen',
-                  ),
-                ),
-
-                _buildNotificationCard(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Showing Schedule',
-                  description:
-                      'Your property showing schedule has been Set by the agent',
-                  time: '2 hours ago',
-                  isUnread: true,
-                  isHighlighted: true,
-                  contentWidget: _buildPropertyContent(
-                    image:
-                        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?fit=crop&w=800&q=80",
-                    title: 'Modern Family Home',
-                    address: '123 Oak Street, Springfield',
-                    dateTime: 'Nov 15, 2025  3:00 PM',
-                    agentName: 'Sarah Johnson',
-                  ),
-                  hasActions: true,
-                ),
-
-                // 4. New Property Match (Simple)
-                _buildNotificationCard(
-                  icon: Icons.notifications_outlined,
-                  title: 'New Property Match',
-                  description: '3 new properties match your search criteria',
-                  time: '2 days ago',
-                  isUnread: false,
-                  isHighlighted: false,
-                ),
-              ],
-            ),
+              );
+            }),
           ),
         ],
       ),
@@ -210,7 +188,9 @@ class NotificationScreen extends StatelessWidget {
     bool isUnread = false,
     bool hasActions = false,
     bool isHighlighted = false,
+    String? actionText,
     Widget? contentWidget,
+    NotificationItem? notification,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -305,9 +285,13 @@ class NotificationScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Only navigate for 'Showing Schedule' title
-                      if (title == 'Showing Schedule') {
-                        Get.to(() => const ShowingAgreementScreen());
+                      if (title == 'Showing Schedule' ||
+                          actionText == 'Sign Agreement') {
+                        Get.to(
+                          () => ShowingAgreementScreen(
+                            notification: notification,
+                          ),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -329,7 +313,7 @@ class NotificationScreen extends StatelessWidget {
                           ), // Add icon only if needed
                         SizedBox(width: 8.w),
                         Text(
-                          'Accept',
+                          actionText ?? 'Accept',
                           style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
