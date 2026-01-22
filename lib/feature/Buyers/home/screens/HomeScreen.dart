@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = jsonDecode(response.body);
         final profile = ProfileResponse.fromJson(data);
         final name =
-            ((profile.firstName ?? '') + ' ' + (profile.lastName ?? '')).trim();
+            ('${profile.firstName ?? ''} ${profile.lastName ?? ''}').trim();
         setState(() {
           _profileHeader = _ProfileHeaderData(
             name: name.isNotEmpty ? name : profile.username,

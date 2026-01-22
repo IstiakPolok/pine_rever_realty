@@ -10,7 +10,6 @@ import '../../../../core/const/app_colors.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
 import '../controller/otpVerificationController.dart';
-import 'resetPassScreen.dart';
 
 class otpVerificationScreen extends StatelessWidget {
   final String? email;

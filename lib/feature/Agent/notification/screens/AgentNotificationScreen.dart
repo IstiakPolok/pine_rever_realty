@@ -143,7 +143,7 @@ class AgentNotificationScreen extends StatelessWidget {
               ),
               ...controller.notifications.map((notification) {
                 return _buildNotificationFromData(notification);
-              }).toList(),
+              }),
             ],
           ),
         );

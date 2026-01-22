@@ -312,7 +312,7 @@ class _PropertiesRequestFormScreenState
                     child: _isLoadingAgents
                         ? const Center(child: CircularProgressIndicator())
                         : DropdownButtonFormField<Agent>(
-                            value: _selectedAgent,
+                            initialValue: _selectedAgent,
                             hint: Text(
                               'Select an agent',
                               style: GoogleFonts.poppins(

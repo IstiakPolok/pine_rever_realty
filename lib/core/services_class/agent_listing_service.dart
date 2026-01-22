@@ -27,8 +27,9 @@ class AgentListingService {
       if (bedrooms != null) queryParameters['bedrooms'] = bedrooms.toString();
       if (city != null && city.isNotEmpty) queryParameters['city'] = city;
       if (state != null && state.isNotEmpty) queryParameters['state'] = state;
-      if (zipCode != null && zipCode.isNotEmpty)
+      if (zipCode != null && zipCode.isNotEmpty) {
         queryParameters['zip_code'] = zipCode;
+      }
 
       final uri = Uri.parse(
         '${Urls.baseUrl}/buyer/agent-listings/',

@@ -21,12 +21,10 @@ class ForgotPassController extends GetxController {
     try {
       isLoading.value = true;
       print(
-        '🌐 ForgotPassController: Sending POST to: ' +
-            Urls.baseUrl +
-            '/common/forgot-password/',
+        '🌐 ForgotPassController: Sending POST to: ${Urls.baseUrl}/common/forgot-password/',
       );
       final response = await http.post(
-        Uri.parse(Urls.baseUrl + '/common/forgot-password/'),
+        Uri.parse('${Urls.baseUrl}/common/forgot-password/'),
         headers: {'Content-Type': 'application/json'},
         body: '{"email": "$email"}',
       );

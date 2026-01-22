@@ -1,4 +1,5 @@
 /// Registration Request Models for different roles
+library;
 
 // Agent Registration Request
 class AgentRegistrationRequest {

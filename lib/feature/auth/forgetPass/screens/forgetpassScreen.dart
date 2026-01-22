@@ -3,16 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/const/app_colors.dart';
-import '../../../../core/const/authTextfield.dart';
 import '../../../../core/const/customButton.dart';
 import '../../../../core/const/custombackbutton.dart';
 import '../controller/forgotPassController.dart';
-import 'otpVerificationScreen.dart';
-import '../../../../core/const/app_colors.dart';
-import '../../../../core/const/authTextfield.dart';
-import '../../../../core/const/customButton.dart';
-import '../../../../core/const/custombackbutton.dart';
-import 'otpVerificationScreen.dart';
 
 class forgetpassScreen extends StatelessWidget {
   const forgetpassScreen({super.key});

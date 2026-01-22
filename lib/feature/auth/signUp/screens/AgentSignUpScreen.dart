@@ -75,7 +75,7 @@ class _AgentSignUpScreenState extends State<AgentSignUpScreen> {
     }
 
     // Generate username from email
-    final username = _emailController.text.trim().split('@').first + '_agent';
+    final username = '${_emailController.text.trim().split('@').first}_agent';
 
     // Call Agent registration API
     final success = await _signController.registerAgent(

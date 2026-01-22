@@ -37,7 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final fullName = '${widget.profile?.firstName ?? ''}'.trim();
+    final fullName = (widget.profile?.firstName ?? '').trim();
     _nameController = TextEditingController(
       text: fullName.isNotEmpty
           ? fullName

@@ -30,7 +30,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           builder: (context, constraints) {
             // Initialize ScreenUtil
             return SingleChildScrollView(
-              child: Container(
+              child: SizedBox(
                 width: double.infinity,
                 child: Padding(
                   padding: EdgeInsets.symmetric(

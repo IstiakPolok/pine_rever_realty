@@ -126,7 +126,7 @@ class _SallerHomeScreenState extends State<SallerHomeScreen> {
             // Initialize ScreenUtil
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Container(
+              child: SizedBox(
                 width: double.infinity,
                 child: Padding(
                   padding: EdgeInsets.symmetric(

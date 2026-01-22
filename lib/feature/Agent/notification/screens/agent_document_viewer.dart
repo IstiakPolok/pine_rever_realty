@@ -88,9 +88,9 @@ class _AgentDocumentViewerState extends State<AgentDocumentViewer> {
           ? PdfViewPinch(controller: _pdfController!)
           : _isImage(widget.url)
           ? PhotoView.customChild(
-              child: Image.memory(_bytes!),
               minScale: PhotoViewComputedScale.contained,
               maxScale: PhotoViewComputedScale.covered * 3,
+              child: Image.memory(_bytes!),
             )
           : Center(child: Text('Unsupported file format')),
     );

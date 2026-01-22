@@ -91,8 +91,9 @@ class _SellingAgreementScreenState extends State<SellingAgreementScreen> {
 
   String? _getFileUrl() {
     if (_agreement == null) return null;
-    if (_agreement!['selling_agreement_file'] != null)
+    if (_agreement!['selling_agreement_file'] != null) {
       return _agreement!['selling_agreement_file'] as String;
+    }
     return null;
   }
 
@@ -355,7 +356,7 @@ class _SellingAgreementScreenState extends State<SellingAgreementScreen> {
           final message = jsonBody['message'] ?? 'Agreement accepted';
           if (jsonBody is Map && jsonBody['id'] != null) {
             setState(
-              () => _agreement = Map<String, dynamic>.from(jsonBody as Map),
+              () => _agreement = Map<String, dynamic>.from(jsonBody),
             );
           } else if (_agreement != null) {
             setState(() => _agreement!['agreement_status'] = 'accepted');
@@ -427,7 +428,7 @@ class _SellingAgreementScreenState extends State<SellingAgreementScreen> {
           final message = jsonBody['message'] ?? 'Agreement rejected';
           if (jsonBody is Map && jsonBody['id'] != null) {
             setState(
-              () => _agreement = Map<String, dynamic>.from(jsonBody as Map),
+              () => _agreement = Map<String, dynamic>.from(jsonBody),
             );
           } else if (_agreement != null) {
             setState(() => _agreement!['agreement_status'] = 'rejected');

@@ -31,12 +31,10 @@ class OtpVerificationController extends GetxController {
     try {
       isLoading.value = true;
       print(
-        '🌐 OtpVerificationController: Sending POST to: ' +
-            Urls.baseUrl +
-            '/common/verify-otp/',
+        '🌐 OtpVerificationController: Sending POST to: ${Urls.baseUrl}/common/verify-otp/',
       );
       final response = await http.post(
-        Uri.parse(Urls.baseUrl + '/common/verify-otp/'),
+        Uri.parse('${Urls.baseUrl}/common/verify-otp/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'otp': otp}),
       );

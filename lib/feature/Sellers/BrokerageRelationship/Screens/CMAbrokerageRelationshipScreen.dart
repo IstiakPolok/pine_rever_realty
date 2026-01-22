@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/instance_manager.dart';
 
 import '../../../../core/const/app_colors.dart';
 import 'ViewCMAFinalReportScreen.dart';

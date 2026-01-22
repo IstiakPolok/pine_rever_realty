@@ -123,7 +123,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'phone_number': _phoneController.text.trim(),
       'license_number': _licenseController.text.trim(),
       'company_details': '',
-      'years_of_experience': int.tryParse(_yearsExpController.text) ?? null,
+      'years_of_experience': int.tryParse(_yearsExpController.text),
       'area_of_expertise': _specializationController.text.trim(),
       'languages': _languages.isNotEmpty ? _languages.join(',') : null,
       'availability': _selectedAvailability,
@@ -533,7 +533,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: EdgeInsets.only(bottom: 12.h),
               child: child,
             );
-          }).toList(),
+          }),
         ],
       ),
     );

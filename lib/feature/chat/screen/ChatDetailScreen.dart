@@ -135,7 +135,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   final isMe =
                       message.senderEmail == _controller.currentUserEmail.value;
                   print(
-                    'ChatDetailScreen: rendering message ${index}: ${message.content} isMe=$isMe',
+                    'ChatDetailScreen: rendering message $index: ${message.content} isMe=$isMe',
                   );
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 24),

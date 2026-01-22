@@ -197,7 +197,6 @@ class _EditScheduleShowingScreenState extends State<EditScheduleShowingScreen> {
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
-                        dialogBackgroundColor: Colors.white,
                         timePickerTheme: TimePickerThemeData(
                           backgroundColor: Colors.white,
                           dialBackgroundColor: primaryColor.withOpacity(0.1),
@@ -206,7 +205,7 @@ class _EditScheduleShowingScreenState extends State<EditScheduleShowingScreen> {
                           hourMinuteColor: secondaryColor.withOpacity(0.1),
                           dayPeriodTextColor: primaryText,
                           entryModeIconColor: primaryText,
-                        ),
+                        ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
                       ),
                       child: child!,
                     );

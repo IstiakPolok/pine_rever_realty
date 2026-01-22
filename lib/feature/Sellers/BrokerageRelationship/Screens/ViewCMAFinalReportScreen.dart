@@ -422,7 +422,7 @@ class _ViewCMAFinalReportScreenState extends State<ViewCMAFinalReportScreen> {
           final jsonBody = json.decode(response.body);
           final message = jsonBody['message'] ?? 'CMA accepted';
           if (jsonBody is Map && jsonBody['id'] != null) {
-            setState(() => _cma = Map<String, dynamic>.from(jsonBody as Map));
+            setState(() => _cma = Map<String, dynamic>.from(jsonBody));
           } else if (_cma != null) {
             setState(() => _cma!['cma_status'] = 'accepted');
           }
@@ -474,7 +474,7 @@ class _ViewCMAFinalReportScreenState extends State<ViewCMAFinalReportScreen> {
           final jsonBody = json.decode(response.body);
           final message = jsonBody['message'] ?? 'CMA rejected';
           if (jsonBody is Map && jsonBody['id'] != null) {
-            setState(() => _cma = Map<String, dynamic>.from(jsonBody as Map));
+            setState(() => _cma = Map<String, dynamic>.from(jsonBody));
           } else if (_cma != null) {
             setState(() => _cma!['cma_status'] = 'rejected');
           }

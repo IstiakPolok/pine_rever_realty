@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 import 'EditProfileScreen.dart';
-import 'dart:convert';
 
 import 'package:pine_rever_realty/feature/auth/login/model/login_response_model.dart';
 

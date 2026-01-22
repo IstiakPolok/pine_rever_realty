@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pine_rever_realty/core/const/app_colors.dart';
 
-import '../../../Sellers/bottom_nav_bar/screen/Seller_bottom_nav_bar.dart';
 import '../../../welcome/view/onBoarding2.dart';
 
 class roleSelect extends StatefulWidget {
